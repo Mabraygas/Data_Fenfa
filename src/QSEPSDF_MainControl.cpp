@@ -13,7 +13,6 @@
 
 extern DayLog g_clilog;
 int MAX_LST_NUM = 50, MAX_GROUP_NUM = 3, MAX_S_NUM_AGROUP = 30;
-int initSuccess = CountNumber(MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP);
 
 CQSEPSDF_MainControl::CQSEPSDF_MainControl()
 {

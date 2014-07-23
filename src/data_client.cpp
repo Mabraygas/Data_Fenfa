@@ -5,6 +5,7 @@
 #include "QSEPSDF_CS.h"
 #include "QSEPSDF_SS.h"
 #include "QSEPSDF_MainControl.h"
+#include "CountNumber.h"
 
 using namespace std;
 
@@ -21,6 +22,8 @@ int main(int argc, char* argv[])
 		usage(argc, argv);
 		return -1;
 	}
+    
+    int initSuccess = CountNumber(MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP);
 
 	CQSEPSDF_CS dfClient;
 	CQSEPSDF_SS dfServer;
