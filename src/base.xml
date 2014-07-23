@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<Soku GroupNumber="1">
+	<Group LocalRoot="/opt/wangyt/" key="0" ServerCount="2">
+		<Server ServerNo="1" RemoteRoot="/opt/sokuproc/data/" IP="10.103.8.187" Port="51116"></Server>
+    </Group>
+</Soku>

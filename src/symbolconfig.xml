@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<Config GroupCount="2">
+	<Base BaseRoot="/opt/sokuproc/data" BaseCount="2">
+	    <BaseNode BaseNodeID="0" IP="127.0.0.1" Port="51116"></BaseNode>
+		<BaseNode BaseNodeID="1" IP="10.103.8.187" Port="51116"></BaseNode>
+    </Base>
+	<Group GroupID="0" ListName="Add_Result.lst_000">
+	    <IS ISRoot="/opt/sokutest" ISCount="3">
+		    <ISNode ISNodeID="0" IP="10.103.0.1" Port="51116"></ISNode>
+			<ISNode ISNodeID="1" IP="10.103.0.2" Port="51116"></ISNode>
+			<ISNode ISNodeID="2" IP="10.103.0.3" Port="51116"></ISNode>
+		</IS>
+	    <Broker BrokerRoot="/opt/sokutest/data" BrokerCount="2">
+	        <BrokerNode BrokerNodeID="0" IP="10.103.16.81" Port="51116"></BrokerNode>
+		    <BrokerNode BrokerNodeID="1" IP="10.103.16.122" Port="51116"></BrokerNode>
+        </Broker>
+	</Group>
+	<Group GroupID="1" ListName="Add_Result.lst_001">
+	    <IS ISRoot="/opt/sokutest" ISCount="3">
+		    <ISNode ISNodeID="0" IP="10.103.1.1" Port="51116"></ISNode>
+			<ISNode ISNodeID="1" IP="10.103.1.2" Port="51116"></ISNode>
+			<ISNode ISNodeID="2" IP="10.103.1.3" Port="51116"></ISNode>
+		</IS>
+	    <Broker BrokerRoot="/opt/sokutest/data" BrokerCount="2">
+	        <BrokerNode BrokerNodeID="0" IP="10.103.16.81" Port="51116"></BrokerNode>
+		    <BrokerNode BrokerNodeID="1" IP="10.103.16.122" Port="51116"></BrokerNode>
+        </Broker>
+	</Group>
+</Config>

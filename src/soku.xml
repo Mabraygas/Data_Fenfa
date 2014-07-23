@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<Soku ListNumber="1">
+    <List name="/opt/wangyt/UKS_DF_Proj/src/Video.lst" key="0" GroupRoot="/opt/sokuproc" GroupListName="/opt/sokuproc/Video.lst" GroupNumber="1">
+        <Group GroupNo="0" SendDataType="2" ServerNumber="1">
+            <Server ServerNo="0" IP="10.103.16.81" Port="51116"></Server>
+        </Group>
+    </List>
+</Soku>
