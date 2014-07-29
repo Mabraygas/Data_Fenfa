@@ -12,7 +12,7 @@
 #define  LOG(format, args...) g_clilog.TWrite("%s:%s(%d) " format, __FILE__, __FUNCTION__, __LINE__, ##args)
 
 extern DayLog g_clilog;
-int MAX_LST_NUM = 50, MAX_GROUP_NUM = 3, MAX_S_NUM_AGROUP = 30;
+int MAX_LST_NUM = 0, MAX_GROUP_NUM = 0, MAX_S_NUM_AGROUP = 0, FILE_NUM = 0;
 
 CQSEPSDF_MainControl::CQSEPSDF_MainControl()
 {

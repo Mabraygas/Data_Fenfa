@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////
 using namespace std;
 
-extern int MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP;
+extern int MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP, FILE_NUM;
 
 extern DayLog g_log;
 
@@ -135,26 +135,21 @@ int DataVerify::LoadXml(const char* xmlFile)
 	   TiXmlAttribute* attributeOfList = ListElement->FirstAttribute(); 
 	   for (;attributeOfList != NULL; attributeOfList = attributeOfList->Next() ) 
 	   {  
-		   //cout << attributeOfList->Name() << " : " << attributeOfList->Value() << std::endl;  
 		   if(strcmp(attributeOfList->Name(), "name") == 0)
 		   {
 			   strcpy(m_LstInf[i].m_CheckLstMName, attributeOfList->Value());
-			   //cout<<"name:"<<m_LstInf[i].m_CheckLstMName<<endl;
 		   }else if(strcmp(attributeOfList->Name(), "GroupRoot") == 0)
 		   {
 			   strcpy(m_LstInf[i].m_GroupRoot, attributeOfList->Value());
 			   int iLen = strlen(m_LstInf[i].m_GroupRoot);
 			   if(m_LstInf[i].m_GroupRoot[iLen-1] == '/')
 				   m_LstInf[i].m_GroupRoot[iLen-1] = '\0';
-			   //cout<<"GroupFileName:"<<m_LstInf[i].m_GroupRoot<<endl;
 		   }else if(strcmp(attributeOfList->Name(), "GroupListName") == 0)
 		   {
 			   strcpy(m_LstInf[i].m_GroupLstName, attributeOfList->Value());
-			   //cout<<"GroupListName:"<<m_LstInf[i].m_GroupLstName<<endl;
 		   }else if(strcmp(attributeOfList->Name(), "GroupNumber") == 0)
 		   {
 			   m_LstInf[i].m_RealGroupNum = attributeOfList->IntValue();
-			   //cout<<"GroupNumber:"<<m_LstInf[i].m_RealGroupNum<<endl;
 		   }
 	   }
 
@@ -165,19 +160,15 @@ int DataVerify::LoadXml(const char* xmlFile)
 		   TiXmlAttribute* attributeOfGroup = GroupElement->FirstAttribute(); 
 		   for (;attributeOfGroup != NULL; attributeOfGroup = attributeOfGroup->Next() ) 
 		   {  
-			   //cout << attributeOfGroup->Name() << " : " << attributeOfGroup->Value() << std::endl;  
 			   if(strcmp(attributeOfGroup->Name(), "GroupNo") == 0)
 			   {
 				   m_LstInf[i].m_GroupInf[j].m_GroupNo = attributeOfGroup->IntValue();
-				   //cout<<"GroupNo:"<<m_LstInf[i].m_GroupInf[j].m_GroupNo<<endl;
 			   }else if(strcmp(attributeOfGroup->Name(), "SendDataType") == 0)
 			   {
 				   m_LstInf[i].m_GroupInf[j].m_SendDataType = attributeOfGroup->IntValue();
-				   //cout<<"SendDataType:"<<m_LstInf[i].m_GroupInf[j].m_SendDataType<<endl;
 			   }else if(strcmp(attributeOfGroup->Name(), "ServerNumber") == 0)
 			   {
 				   m_LstInf[i].m_GroupInf[j].m_RealServerNum = attributeOfGroup->IntValue();
-				   //cout<<"ServerNumber:"<<m_LstInf[i].m_GroupInf[j].m_RealServerNum<<endl;
 			   }
 		   }
 

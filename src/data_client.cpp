@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
     
-    int initSuccess = CountNumber(MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP);
+    int initSuccess = CountNumber(MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP, FILE_NUM);
 
 	CQSEPSDF_CS dfClient;
 	CQSEPSDF_SS dfServer;

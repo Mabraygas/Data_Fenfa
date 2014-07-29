@@ -26,15 +26,13 @@ public:
 public:
 	CQSEPSDF_MainControl* m_MainControl;
 	int m_LstNum;
-	//_LST_INF_ m_LstInf[MAX_LST_NUM];
+    int m_FileNum;
     _LST_INF_* m_LstInf;
-    //_GINF_* m_GInf;
-	//CRITICAL_SECTION m_GroupCri[MAXLSTNUM];
+    _SF_INF_* m_FileInf;
 	CRITICAL_SECTION m_MainCri;
 	int m_ThreadNO;
 
 	QueEvent**** m_pDataQue;
-    //QueEvent* m_pDataQue[MAX_LST_NUM][MAX_GROUP_NUM][MAX_S_NUM_AGROUP];
 public:
 
 	int getLocalIP(char *ip);
@@ -65,15 +63,15 @@ public:
 	int CreateAFile(_DFIELD_* pData,ServerInf * pServer);
 
 	//Main Work部分需要的函数
-	int Work_StartList(const int32_t CurThreadNo, _DFIELD_* TmpData);
-	int Work_OpenFile(const int32_t CurThreadNo, _DFIELD_* TmpData);
-	int Work_CloseFile(const int32_t CurThreadNo, _DFIELD_* TmpData);
-	int Work_CloseList(const int32_t CurThreadNo, _DFIELD_* TmpData);
+	int Work_StartList(const int32_t CurThreadNo, const int pointer, _DFIELD_* TmpData);
+	int Work_OpenFile(const int32_t CurThreadNo, const int pointer, _DFIELD_* TmpData);
+	int Work_CloseFile(const int32_t CurThreadNo, const int pointer, _DFIELD_* TmpData);
+	int Work_CloseList(const int32_t CurThreadNo, const int pointer, _DFIELD_* TmpData);
 	uint64_t Work_ModData(const int32_t CurThreadNo, const int Gidx, _DFIELD_* TmpReadData, RStreamBuf* rstream);  //处理取模数据
 	uint64_t Work_ALLData(const int32_t CurThreadNo, const int Gidx, _DFIELD_* TmpReadData, FILE* fprData);  //处理复制数据
 	int Work_CreateAFile(const int32_t CurThreadNo, _DFIELD_* TmpData);
 
-	int Work_Verify(const int32_t CurThreadNo);
+	int Work_Verify(const int32_t CurThreadNo, const int pointer);
 	int Work_MoveMD5File(const int32_t CurThreadNo);
 	int BuildMd5(const char* szFile, std::string& strmd5, char* pBuf);
 

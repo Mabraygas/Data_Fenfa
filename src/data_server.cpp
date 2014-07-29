@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 
 	CQSEPSDF_SS dfServer;
 
-	uint16_t port = 51116;
+	uint16_t port = 11111;
 	uint32_t threadnum = 1;
 
 	if(argc == 2)

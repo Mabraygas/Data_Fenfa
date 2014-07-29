@@ -56,7 +56,7 @@
 
 #define MAX_FILE_NUM            2000                            //文件名队列最大文件数
 
-extern int MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP;
+extern int MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP, FILE_NUM, MAX_S_NUM_AFILE;
 
 using namespace eagle;
 
@@ -87,7 +87,9 @@ typedef struct GroupInf
 	_SERVER_INF_*           m_Server;
     int						m_RealServerNum;               //实际的文件服务器的数目
 	//CRITICAL_SECTION		m_Cri;                         //当前组的锁，用于做归零计算使用
-	
+    char                    m_GroupRoot[300];              //存入服务器文件的路径
+    char                    m_GroupLstName[300];           //服务器列表的名称
+
 }_GINF_;
 
 typedef struct ListInf 
@@ -101,7 +103,6 @@ typedef struct ListInf
         delete[] m_GroupInf;
     }
     _GINF_*                 m_GroupInf;
-	//_GINF_	                m_GroupInf[MAX_GROUP_NUM];
 	int		                m_RealGroupNum;                //实际需要控制的组的数目
 	char	                m_CheckLstMName[300];          //当前正在读的List
 	unsigned __int64        m_CurLstKey;                   //当前处理的List编号
@@ -109,6 +110,22 @@ typedef struct ListInf
 	char                    m_GroupRoot[300];              //存入服务器文件的路径
 	FILE*                   m_CurFileFP;                   //当前服务器在操作的对方写文件的句柄
 }_LST_INF_;
+
+typedef struct SingleFileInf
+{
+    SingleFileInf() {
+        m_Server = new _SERVER_INF_[MAX_S_NUM_AGROUP]; 
+    }
+    ~SingleFileInf() {
+        delete[] m_Server;
+    }
+    char                    m_GroupRoot[300];
+    char                    m_GroupLstName[300];
+    FILE*                   m_CurFileFP;
+    int                     m_SendDataType;
+    unsigned __int64        m_CurCheckKey;
+    _SERVER_INF_*           m_Server;
+}_SF_INF_;
 
 typedef struct DataField 
 {

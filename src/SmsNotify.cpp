@@ -43,7 +43,7 @@ static int      g_iCntFile = 0;    //每天处理的文件数量
 static time_t   g_tmLastSend = 0;
 
 static int  SmsNotify(const char * szMsg) {
-	const char * szPhoneNums = "18911059121";//
+	const char * szPhoneNums = "15201360467";//
 	const char * szIp = "10.103.11.62";
 	const uint16_t wPort = 20229;
 	//int ret = 0;

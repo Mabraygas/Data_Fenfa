@@ -14,7 +14,7 @@
 #include "QSEPSDF_MainControl.h"
 #include "work_client.h"
 
-extern int MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP;
+extern int MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP, FILE_NUM;
 typedef struct VerifyGroup 
 {
 	int						m_GroupNo;                     //当前组的编号

@@ -32,12 +32,11 @@ int main(int argc, char* argv[])
 		usage(argc, argv);
 		return -1;
 	}
-    int initSuccess = CountNumber(MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP);
+    int initSuccess = CountNumber(MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP, FILE_NUM);
     CQSEPSDF_CS dfClient;
 	CQSEPSDF_SS dfServer;
 
 	CQSEPSDF_MainControl dfMainControl;
-
 	void* aAbstract[2];
 	aAbstract[0] = (void*)&dfClient; 
 	aAbstract[1] = (void*)&dfServer;

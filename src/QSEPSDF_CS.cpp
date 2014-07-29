@@ -37,8 +37,10 @@ DayLog g_log;
 CQSEPSDF_CS::CQSEPSDF_CS()
 {
 	m_LstNum = MAX_LST_NUM;
+    m_FileNum = FILE_NUM;
 	m_ThreadNO = 0;
     m_LstInf = new _LST_INF_[MAX_LST_NUM];
+    m_FileInf = new _SF_INF_[FILE_NUM];
     m_pDataQue = new QueEvent***[MAX_LST_NUM];
     for(int p = 0 ; p < MAX_LST_NUM ; p ++ ) {
         m_pDataQue[p] = new QueEvent**[MAX_GROUP_NUM];
@@ -53,6 +55,7 @@ CQSEPSDF_CS::~CQSEPSDF_CS()
 	DeleteCriticalSection(&m_MainCri);
 	delete m_MainControl;
     delete[] m_LstInf;
+    delete[] m_FileInf;
     for(int p = 0 ; p < MAX_LST_NUM ; p ++ ) {
         for(int q = 0 ; q < MAX_GROUP_NUM ; q ++ ) {
             delete []m_pDataQue[p][q];
@@ -122,7 +125,7 @@ int CQSEPSDF_CS::InitSys(CQSEPSDF_MainControl* pMain)
 		LOG("Load Info error, return %d\n", Ret);
 		return Ret; 
 	}
-	int i(0),j(0),k(0);
+	int i(0),j(0),k(0),p(0),q(0);
 	for(i = 0; i < m_LstNum; i++)
 	{
 		for(j = 0; j < m_LstInf[i].m_RealGroupNum; j++)
@@ -147,7 +150,7 @@ int CQSEPSDF_CS::InitSys(CQSEPSDF_MainControl* pMain)
 */
 int CQSEPSDF_CS::LoadAllINF()
 {
-   int i,j,k;
+   int i,j,k,p,q;
    for (i=0; i<MAX_LST_NUM; i++)
    {
 	    m_LstInf[i].m_RealGroupNum = 0;
@@ -163,6 +166,8 @@ int CQSEPSDF_CS::LoadAllINF()
 		   m_LstInf[i].m_GroupInf[j].m_GroupNo = j;
 		   m_LstInf[i].m_GroupInf[j].m_RealServerNum = 0;
 		   m_LstInf[i].m_GroupInf[j].m_SendDataType = 256;
+           *m_LstInf[i].m_GroupInf[j].m_GroupRoot = 0;
+           *m_LstInf[i].m_GroupInf[j].m_GroupLstName = 0;
 		  
 		   for (k=0; k<MAX_S_NUM_AGROUP; k++)
 		   {
@@ -205,7 +210,8 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
        printf("xml name is null\n");
        return -1;
    }
-   int i(0),j(0),k(0);
+   int i(0),j(0),k(0),p(0),q(0);
+   int file_find = 0;
    TiXmlDocument doc;  
    if (!doc.LoadFile(xmlFile)) {  	
 	   LOG("can not parse xml %s\n", xmlFile);
@@ -214,63 +220,74 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
 
    TiXmlElement* rootElement = doc.RootElement();  //Soku元素  
    TiXmlAttribute* attributeOfSoku = rootElement->FirstAttribute();
-	
+   TiXmlAttribute* attributeOfSokuNext = attributeOfSoku->Next();
+
    if(strcmp("ListNumber", attributeOfSoku->Name()) == 0)
 	   m_LstNum = attributeOfSoku->IntValue();
+   if(strcmp("FileNumber", attributeOfSokuNext->Name()) == 0)
+       m_FileNum = attributeOfSokuNext->IntValue();
 
 
    TiXmlElement* ListElement = rootElement->FirstChildElement();  //List  
 
    for (i = 0; ListElement != NULL; ListElement = ListElement->NextSiblingElement(),i++ ) {  
-	   TiXmlAttribute* attributeOfList = ListElement->FirstAttribute(); 
+	   file_find = 0;
+       TiXmlAttribute* attributeOfList = ListElement->FirstAttribute(); 
 	   for (;attributeOfList != NULL; attributeOfList = attributeOfList->Next() ) {  
-		   //cout << attributeOfList->Name() << " : " << attributeOfList->Value() << std::endl;  
-		   if(strcmp(attributeOfList->Name(), "name") == 0)
+		   if(strcmp(attributeOfList->Name(), "Source") == 0) {
+                file_find = 1;
+                break;
+           }
+           else if(strcmp(attributeOfList->Name(), "FileRoot") == 0) {
+                
+           }
+           else if(strcmp(attributeOfList->Name(), "name") == 0)
 		   {
 			   strcpy(m_LstInf[i].m_CheckLstMName, attributeOfList->Value());
-			   //cout<<"name:"<<m_LstInf[i].m_CheckLstMName<<endl;
 
 		   }else if(strcmp(attributeOfList->Name(), "key") == 0)
 		   {
 			   m_LstInf[i].m_CurLstKey = attributeOfList->IntValue();
-			   //cout<<"key:"<<m_LstInf[i].m_CurLstKey<<endl;
 		   }else if(strcmp(attributeOfList->Name(), "GroupRoot") == 0)
 		   {
 			   strcpy(m_LstInf[i].m_GroupRoot, attributeOfList->Value());
 			   int iLen = strlen(m_LstInf[i].m_GroupRoot);
 			   if(m_LstInf[i].m_GroupRoot[iLen-1] == '/')
 				   m_LstInf[i].m_GroupRoot[iLen-1] = '\0';
-			   //cout<<"GroupFileName:"<<m_LstInf[i].m_GroupRoot<<endl;
 		   }else if(strcmp(attributeOfList->Name(), "GroupListName") == 0)
 		   {
 			   strcpy(m_LstInf[i].m_GroupLstName, attributeOfList->Value());
-			   //cout<<"GroupListName:"<<m_LstInf[i].m_GroupLstName<<endl;
 		   }else if(strcmp(attributeOfList->Name(), "GroupNumber") == 0)
 		   {
 			   m_LstInf[i].m_RealGroupNum = attributeOfList->IntValue();
-			   //cout<<"GroupNumber:"<<m_LstInf[i].m_RealGroupNum<<endl;
 		   }
 	   }
-
+        if(file_find) 
+            break;
 
 	   TiXmlElement* GroupElement = ListElement->FirstChildElement();//Group 
 	   for (j = 0; GroupElement != NULL; GroupElement = GroupElement->NextSiblingElement(), j++ ) {
 		   TiXmlAttribute* attributeOfGroup = GroupElement->FirstAttribute(); 
 		   for (;attributeOfGroup != NULL; attributeOfGroup = attributeOfGroup->Next() ) {  
-			   //cout << attributeOfGroup->Name() << " : " << attributeOfGroup->Value() << std::endl;  
 			   if(strcmp(attributeOfGroup->Name(), "GroupNo") == 0)
 			   {
 				   m_LstInf[i].m_GroupInf[j].m_GroupNo = attributeOfGroup->IntValue();
-				   //cout<<"GroupNo:"<<m_LstInf[i].m_GroupInf[j].m_GroupNo<<endl;
 			   }else if(strcmp(attributeOfGroup->Name(), "SendDataType") == 0)
 			   {
 				   m_LstInf[i].m_GroupInf[j].m_SendDataType = attributeOfGroup->IntValue();
-				   //cout<<"SendDataType:"<<m_LstInf[i].m_GroupInf[j].m_SendDataType<<endl;
 			   }else if(strcmp(attributeOfGroup->Name(), "ServerNumber") == 0)
 			   {
 				   m_LstInf[i].m_GroupInf[j].m_RealServerNum = attributeOfGroup->IntValue();
-				   //cout<<"ServerNumber:"<<m_LstInf[i].m_GroupInf[j].m_RealServerNum<<endl;
-			   }
+			   }else if(strcmp(attributeOfGroup->Name(), "GroupRoot") == 0)
+               {
+                   strcpy(m_LstInf[i].m_GroupInf[j].m_GroupRoot, attributeOfGroup->Value());
+                   int jLen = strlen(m_LstInf[i].m_GroupInf[j].m_GroupRoot);
+                   if(m_LstInf[i].m_GroupInf[j].m_GroupRoot[jLen - 1] == '/')
+                       m_LstInf[i].m_GroupInf[j].m_GroupRoot[jLen - 1] = '\0';
+               }else if(strcmp(attributeOfGroup->Name(), "GroupListName") == 0)
+               {
+                   strcpy(m_LstInf[i].m_GroupInf[j].m_GroupLstName, attributeOfGroup->Value());
+               }
 		   }
 
 
@@ -278,7 +295,6 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
 		   for (k = 0; ServerElement != NULL; ServerElement = ServerElement->NextSiblingElement(), k++ ) {
 			   TiXmlAttribute* attributeOfServer = ServerElement->FirstAttribute(); 
 			   for (;attributeOfServer != NULL; attributeOfServer = attributeOfServer->Next() ) {  
-				   //cout << attributeOfServer->Name() << " : " << attributeOfServer->Value() << std::endl;  
 				   if(strcmp(attributeOfServer->Name(),"ServerNo") == 0)
 				   {
 					   m_LstInf[i].m_GroupInf[j].m_Server[k].m_ServerNO = attributeOfServer->IntValue();
@@ -288,7 +304,6 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
 				   }else if(strcmp(attributeOfServer->Name(),"Port") == 0)
 				   {
 					   m_LstInf[i].m_GroupInf[j].m_Server[k].m_ServerPort = attributeOfServer->IntValue();
-					   //cout<<"Port:"<<m_LstInf[i].m_GroupInf[j].m_Server[k].m_ServerPort<<endl;
 				   }
 
 			   }
@@ -302,6 +317,41 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
 
    } 
    m_LstNum = i;
+
+    for(p = 0; ListElement != NULL; ListElement = ListElement->NextSiblingElement(), p++) {
+        TiXmlAttribute* attributeOfFile = ListElement->FirstAttribute();
+        for(; attributeOfFile != NULL; attributeOfFile = attributeOfFile->Next()) {
+            if(strcmp(attributeOfFile->Name(), "Source") == 0) {
+                ;
+            }
+            else if(strcmp(attributeOfFile->Name(), "FileRoot") == 0) {
+                ;
+            }
+            else if(strcmp(attributeOfFile->Name(), "SendDataType") == 0) {
+                ;
+            }
+            else if(strcmp(attributeOfFile->Name(), "ServerNumber") == 0) {
+                ;
+            }
+        }
+
+        TiXmlElement* ServerElememt = ListElement->FirstChildElement();
+        for(q = 0; ServerElememt != NULL; ServerElememt = ServerElememt->NextSiblingElement(), q++) {
+            TiXmlAttribute* attributeOfServer = ServerElememt->FirstAttribute();
+            for(; attributeOfServer != NULL; attributeOfServer = attributeOfServer->Next()) {
+                if(strcmp(attributeOfServer->Name(), "ServerNo") == 0) {
+                    ;
+                }
+                else if(strcmp(attributeOfServer->Name(), "IP") == 0) {
+                    ;
+                }
+                else if(strcmp(attributeOfServer->Name(), "Port") == 0) {
+                    ;
+                }
+            }
+        }
+    }
+    
    return 0;
 }
 
@@ -691,12 +741,12 @@ int CQSEPSDF_CS::GetrealStr(char* source)
 	return lLen;
 }
 
-int CQSEPSDF_CS::Work_StartList(const int32_t CurThreadNo, _DFIELD_* pTmpData)
+int CQSEPSDF_CS::Work_StartList(const int32_t CurThreadNo, const int pointer,_DFIELD_* pTmpData)
 {
 	int result = -1;
 	int k = 0, j = 0;
-	for ( k = 0; k < m_LstInf[CurThreadNo].m_RealGroupNum; k++)
-	{
+	//for ( k = 0; k < m_LstInf[CurThreadNo].m_RealGroupNum; k++)
+	//{
 
 		_DFIELD_* pStartData;
 		_DFIELD_ StartData;
@@ -720,30 +770,29 @@ int CQSEPSDF_CS::Work_StartList(const int32_t CurThreadNo, _DFIELD_* pTmpData)
 		pStartData->m_OperateType = DF_START_LST;
 		pStartData->m_DataLength = 0;
 		pStartData->m_FP  = NULL;
-		pStartData->m_FreeSymbole = m_LstInf[CurThreadNo].m_GroupInf[k].m_RealServerNum;
+		pStartData->m_FreeSymbole = m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum;
 		pStartData->m_OPNO = m_LstInf[CurThreadNo].m_CurLstKey;
 		pStartData->m_Result = -1;
 		pStartData->m_Key = 0;
 		strcpy(pStartData->m_Listname, pTmpData->m_Listname);
 		pStartData->m_ListNameLen = pTmpData->m_ListNameLen;  
 
-		for (j =0; j < m_LstInf[CurThreadNo].m_GroupInf[k].m_RealServerNum; j++)
+		for (j =0; j < m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum; j++)
 		{
-			m_pDataQue[CurThreadNo][k][j]->Push(pStartData->m_NO);
+			m_pDataQue[CurThreadNo][pointer][j]->Push(pStartData->m_NO);
 		} 
 		LOG("Work [%d] Servers Start List '%s' \n", j, pTmpData->m_Listname);
 
-	}
-
+	//}
 	return 0;
 }
 
-int CQSEPSDF_CS::Work_OpenFile(const int32_t CurThreadNo, _DFIELD_* pTmpData)
+int CQSEPSDF_CS::Work_OpenFile(const int32_t CurThreadNo, const int pointer, _DFIELD_* pTmpData)
 {
 	int result = -1;
 
-	for (int k = 0; k < m_LstInf[CurThreadNo].m_RealGroupNum; k++)
-	{
+	//for (int k = 0; k < m_LstInf[CurThreadNo].m_RealGroupNum; k++)
+	//{
 		_DFIELD_* pOpenData;
 		_DFIELD_ OpenData;
 
@@ -773,23 +822,23 @@ int CQSEPSDF_CS::Work_OpenFile(const int32_t CurThreadNo, _DFIELD_* pTmpData)
 		pOpenData->m_DataLength = 0;
 		pOpenData->m_FP = m_LstInf[CurThreadNo].m_CurFileFP;
 		pOpenData->m_Result = -1;
-		pOpenData->m_FreeSymbole = m_LstInf[CurThreadNo].m_GroupInf[k].m_RealServerNum;
+		pOpenData->m_FreeSymbole = m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum;
 
-		for (int j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[k].m_RealServerNum; j++ )
+		for (int j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum; j++ )
 		{
-			m_pDataQue[CurThreadNo][k][j]->Push(pOpenData->m_NO);
+			m_pDataQue[CurThreadNo][pointer][j]->Push(pOpenData->m_NO);
 		}
 				  
-	}
+	//}
 
 	return 0;
 }
 
-int CQSEPSDF_CS::Work_CloseFile(const int32_t CurThreadNo, _DFIELD_* pTmpData)
+int CQSEPSDF_CS::Work_CloseFile(const int32_t CurThreadNo, const int pointer, _DFIELD_* pTmpData)
 {
 	int result = -1;
-	for (int k =0; k<m_LstInf[CurThreadNo].m_RealGroupNum; k++)
-	{
+	//for (int k =0; k<m_LstInf[CurThreadNo].m_RealGroupNum; k++)
+	//{
 		_DFIELD_ * pCloseFileData;
 		_DFIELD_   CloseFileData;
 
@@ -808,7 +857,7 @@ int CQSEPSDF_CS::Work_CloseFile(const int32_t CurThreadNo, _DFIELD_* pTmpData)
 
 		pCloseFileData->m_OperateType = DF_CLOSE_FILE;
 
-		if(m_LstInf[CurThreadNo].m_GroupInf[k].m_SendDataType == DF_SEND_DATA_ALL)
+		if(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_SendDataType == DF_SEND_DATA_ALL)
 			pCloseFileData->m_DataLength        = 1;
 		else
 			pCloseFileData->m_DataLength        = 0;
@@ -826,23 +875,23 @@ int CQSEPSDF_CS::Work_CloseFile(const int32_t CurThreadNo, _DFIELD_* pTmpData)
 		//pCloseFileData->m_DataLength  = 0;//pTmpData->DataLength;
 		pCloseFileData->m_FP          = m_LstInf[CurThreadNo].m_CurFileFP;//文件句柄
 		pCloseFileData->m_Result      = -1;//操作是否成功的标志
-		pCloseFileData->m_FreeSymbole = m_LstInf[CurThreadNo].m_GroupInf[k].m_RealServerNum;
-		for (int j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[k].m_RealServerNum; j++)
+		pCloseFileData->m_FreeSymbole = m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum;
+		for (int j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum; j++)
 		{
-			m_pDataQue[CurThreadNo][k][j]->Push(pCloseFileData->m_NO);
+			m_pDataQue[CurThreadNo][pointer][j]->Push(pCloseFileData->m_NO);
 		}
 				  
-	}//end for
+	//}//end for
 
 	return 0;
 }
 
-int CQSEPSDF_CS::Work_CloseList(const int32_t CurThreadNo, _DFIELD_* pTmpData)
+int CQSEPSDF_CS::Work_CloseList(const int32_t CurThreadNo, const int pointer, _DFIELD_* pTmpData)
 {
 	int result = -1;
 	int k = 0, j = 0;
-	for ( k = 0; k < m_LstInf[CurThreadNo].m_RealGroupNum; k++)
-	{
+	//for ( k = 0; k < m_LstInf[CurThreadNo].m_RealGroupNum; k++)
+	//{
 		_DFIELD_ *pEndData;
 		_DFIELD_  EndData;
 
@@ -869,16 +918,16 @@ int CQSEPSDF_CS::Work_CloseList(const int32_t CurThreadNo, _DFIELD_* pTmpData)
 		pEndData->m_Key = 0;
 		strcpy(pEndData->m_Listname, pTmpData->m_Listname);
 		pEndData->m_ListNameLen = pTmpData->m_ListNameLen;
-		pEndData->m_FreeSymbole = m_LstInf[CurThreadNo].m_GroupInf[k].m_RealServerNum;
+		pEndData->m_FreeSymbole = m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum;
 
-		for (j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[k].m_RealServerNum; j++)
+		for (j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum; j++)
 		{
-			m_pDataQue[CurThreadNo][k][j]->Push(pEndData->m_NO);
+			m_pDataQue[CurThreadNo][pointer][j]->Push(pEndData->m_NO);
 		} 
 
 		LOG("Work [%d] Servers Close List '%s' \n", j, pTmpData->m_Listname);
 		  
-	}
+	//}
 
 	return 0;
 }
@@ -999,7 +1048,7 @@ uint64_t CQSEPSDF_CS::Work_ALLData(const int32_t CurThreadNo, const int Gidx, _D
 	return ddwFileSize;
 }
 
-int CQSEPSDF_CS::Work_Verify(const int32_t CurThreadNo)
+int CQSEPSDF_CS::Work_Verify(const int32_t CurThreadNo, const int pointer)
 {
 	char szListName[300];
 	char szlocal[300];
@@ -1049,35 +1098,34 @@ int CQSEPSDF_CS::Work_Verify(const int32_t CurThreadNo)
 		}
 		
 		//远程文件名
-		if(m_LstInf[CurThreadNo].m_GroupRoot == NULL)
-			sprintf(szremote, "%s", szFile);
-		else
-			sprintf(szremote, "%s/%s", m_LstInf[CurThreadNo].m_GroupRoot, szFile);
-		
-		/*
-		if(!BuildMd5(szlocal, strres, pBuf))
-			mapFile.insert(pair<string, string>(string(szlocal), string(szremote)));
-			*/
-		sprintf(szMd5File, "%s.md5", szlocal);
-		if(access(szMd5File, 0) == 0)
-		{
-			mapFile.insert(pair<string, string>(string(szlocal), string(szremote)));
-		}
+        //for(int i = 0; i < m_LstInf[CurThreadNo].m_RealGroupNum; i++) {
+            if(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupRoot != NULL)
+                sprintf(szremote, "%s/%s", m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupRoot, szFile);
+            else if(m_LstInf[CurThreadNo].m_GroupRoot != NULL)
+                sprintf(szremote, "%s/%s", m_LstInf[CurThreadNo].m_GroupRoot, szFile);
+            else
+                sprintf(szremote, "%s", szFile);
+
+            sprintf(szMd5File, "%s.md5", szlocal);
+            if(access(szMd5File, 0) == 0) {
+                mapFile.insert(pair<string, string>(string(szlocal), string(szremote)));
+            }
+        //}
 	}
 	//delete [] pBuf;
 	fclose(fprLst);
 
-	for (int j = 0; j < m_LstInf[CurThreadNo].m_RealGroupNum; j ++)
-	{
-		if (m_LstInf[CurThreadNo].m_GroupInf[j].m_SendDataType == DF_SEND_DATA_MOD)
+	//for (int j = 0; j < m_LstInf[CurThreadNo].m_RealGroupNum; j ++)
+	//{
+		if (m_LstInf[CurThreadNo].m_GroupInf[pointer].m_SendDataType == DF_SEND_DATA_MOD)
 		{
-			continue;
+			return 0;
 		} 
 		
-		for(int k = 0; k < m_LstInf[CurThreadNo].m_GroupInf[j].m_RealServerNum; k ++)
+		for(int k = 0; k < m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum; k ++)
 		{
-			WorkClient wclient(string(m_LstInf[CurThreadNo].m_GroupInf[j].m_Server[k].m_ServerIPStr), 
-					m_LstInf[CurThreadNo].m_GroupInf[j].m_Server[k].m_ServerPort);
+			WorkClient wclient(string(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_Server[k].m_ServerIPStr), 
+					m_LstInf[CurThreadNo].m_GroupInf[pointer].m_Server[k].m_ServerPort);
 			
 			for(map<string, string>::iterator itr = mapFile.begin(); itr != mapFile.end(); itr++)
 			{
@@ -1085,8 +1133,8 @@ int CQSEPSDF_CS::Work_Verify(const int32_t CurThreadNo)
 				if(ret)
 				{
 					wclient.close();
-					LOG("[%s:%d]: '%s'check fail, ret:[%d]\n", m_LstInf[CurThreadNo].m_GroupInf[j].m_Server[k].m_ServerIPStr, 
-						m_LstInf[CurThreadNo].m_GroupInf[j].m_Server[k].m_ServerPort,
+					LOG("[%s:%d]: '%s'check fail, ret:[%d]\n", m_LstInf[CurThreadNo].m_GroupInf[pointer].m_Server[k].m_ServerIPStr, 
+						m_LstInf[CurThreadNo].m_GroupInf[pointer].m_Server[k].m_ServerPort,
 						itr->second.c_str(), ret);
 					return ret;
 				}
@@ -1098,13 +1146,13 @@ int CQSEPSDF_CS::Work_Verify(const int32_t CurThreadNo)
 				
 			}
 			LOG("[%s:%d] Verify [%d] Files\n", 
-					m_LstInf[CurThreadNo].m_GroupInf[j].m_Server[k].m_ServerIPStr, 
-					m_LstInf[CurThreadNo].m_GroupInf[j].m_Server[k].m_ServerPort,
+					m_LstInf[CurThreadNo].m_GroupInf[pointer].m_Server[k].m_ServerIPStr, 
+					m_LstInf[CurThreadNo].m_GroupInf[pointer].m_Server[k].m_ServerPort,
 					mapFile.size());
 			
 		}
 
-	}
+	//}
 
 	
 	return 0;
@@ -1277,294 +1325,196 @@ int CQSEPSDF_CS::MainWork()
 #endif
 	///////////////////////////////////////
 	//用于临时存储数据
-	_DFIELD_  TmpData;
-	TmpData.m_FP = NULL;
-	TmpData.m_DataSize = 0;
-	TmpData.m_DataLength = 0;
-	TmpData.m_PData = RBuf;
-	TmpData.m_OPNO = CurThreadNo;
-	TmpData.m_MemType = DF_NOT_NEED_MEM;
-	TmpData.m_OperateType = DF_NOT_OPR;
-	strcpy(TmpData.m_Listname, m_LstInf[CurThreadNo].m_GroupLstName);
-	TmpData.m_ListNameLen = strlen(TmpData.m_Listname);
 
-	_LSTNO_ TmpLstNOINF; //List's transmission info
-	int iFileIdx = 0;
-	int ret(0);
-	int iSendNum  = 0;
-	string strMd5;
-	bool bverify  = false;
+    
+    ////////////////////////////////////////////////////////////////
+    //数据传输细化到Group,根据Group配置的不同，将数据传输到不同的远程目录中
+    for(;1;) {
+        _DFIELD_ TmpData;
+        TmpData.m_FP = NULL;
+        TmpData.m_DataSize = 0;
+        TmpData.m_DataLength = 0;
+        TmpData.m_PData = RBuf;
+        TmpData.m_OPNO = CurThreadNo;
+        TmpData.m_MemType = DF_NOT_NEED_MEM;
+        TmpData.m_OperateType = DF_NOT_OPR;
+       
+        _LSTNO_ TmpLstNOINF;
+        int iFileIdx = 0;
+        int ret = 0;
+        int iSendNum = 0;
+        string strMd5;
+        bool bverify = false;
 
-	for (;1;)
-	{
-		///////////////////////////////////
-		//   step 1: 监控指定的List   
-        ///////////////////////////////////
+        //   step 1: 监控指定的List
 
-		// if *.lst.Ready exists, read the LstNO info, resume the break-point transmission
-		if (access(szlstName, 0) == 0)
-		{
-			m_MainControl->GetLstNO(&TmpLstNOINF, CurThreadNo);
-			m_LstInf[CurThreadNo].m_CurLstKey = TmpLstNOINF.m_LSTNO; //当前处理的List的key
-			LOG("%s break point retransmission, had transmit File Num:[%d]\n", szlstName, TmpLstNOINF.m_FileNum);
-			//iTmpNum = TmpLstNOINF.m_FileNum;
-			//TmpLstNOINF.m_FileNum = 0;
+        // if *.lst.Ready exists, read the LstNO info, resume the break-point transmission
+        if(access(szlstName, 0) == 0) {
+             m_MainControl->GetLstNO(&TmpLstNOINF, CurThreadNo);
+             m_LstInf[CurThreadNo].m_CurLstKey = TmpLstNOINF.m_LSTNO; //当前处理的List的key
+             LOG("%s break point retransmission, had transmit File Num:[%d]\n", szlstName, TmpLstNOINF.m_FileNum);
+        }
+        else {
+            if(rename(m_LstInf[CurThreadNo].m_CheckLstMName, szlstName)) {
+                sleep(10);
+                continue;
+            }
+            LOG("rename : %s -> %s\n", m_LstInf[CurThreadNo].m_CheckLstMName, szlstName);
+            m_LstInf[CurThreadNo].m_CurLstKey = CurThreadNo;
+            TmpLstNOINF.m_Time = time(NULL);
+            TmpLstNOINF.m_FileNum = 0;
+            TmpLstNOINF.m_AllSize = 0;
+        }
 
-		}else 
-		{
-			if(rename(m_LstInf[CurThreadNo].m_CheckLstMName, szlstName))
-			{
-				Sleep(10);
-				continue;
-			}
-			LOG("rename : %s -> %s\n", m_LstInf[CurThreadNo].m_CheckLstMName, szlstName);
-			m_LstInf[CurThreadNo].m_CurLstKey = CurThreadNo;
-			TmpLstNOINF.m_Time = time(NULL);
-			TmpLstNOINF.m_FileNum = 0;
-			TmpLstNOINF.m_AllSize = 0;
-			//iTmpNum               = 0;
-		}
-
-		FILE *fprLst = fopen(szlstName, "rt");
-		if (NULL == fprLst)
-		{
-			LOG("%s NULL Pointer\n", szlstName);
-			continue;
-		}
-
-		if(feof(fprLst))
-		{
-			LOG("List Empty: %s\n", szlstName);
-			fclose(fprLst);
-			continue;
-		}
-
-		if(fgets(datafile, 300, fprLst) == NULL)
-		{
-			LOG("List Empty: %s\n", szlstName);
-			fclose(fprLst);
-			continue;
-		}
-		else
-		{
-			fseek(fprLst, 0, SEEK_SET);
-		}
-
-		LOG("DFSystem Start List: %s\n", szlstName);
-
-		
-
-		//向群组队列发送指令
-
-		///////////////////////////////////
-		//   step 2: 打开List命令
-        ///////////////////////////////////
-		
-		//TODO
-		if( TmpLstNOINF.m_FileNum == 0 )
-			Work_StartList(CurThreadNo, &TmpData);
-
+        FILE* fprLst = fopen(szlstName, "rt");
+        if(NULL == fprLst) {
+            LOG("%s NULL Pointer\n", szlstName);
+            continue;
+        }
+        if(feof(fprLst)) {
+            LOG("List Empty: %s\n", szlstName);
+            fclose(fprLst);
+            continue;
+        }
+        if(fgets(datafile, 300, fprLst) == NULL) {
+            LOG("List Empty: %s\n", szlstName);
+            fclose(fprLst);
+            continue;
+        }
+        else
+            fseek(fprLst, 0, SEEK_SET);
+        LOG("DFSystem Start List: %s\n", szlstName);
+        for(int pointer = 0; pointer < m_LstInf[CurThreadNo].m_RealGroupNum; pointer++) {
+            m_LstInf[CurThreadNo].m_CurFileFP = NULL;
+            fprLst = fopen(szlstName, "rt");
+            fseek(fprLst, 0, SEEK_SET);
+            strMd5 = "";
+            bverify = false;
+            if(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupLstName != NULL)
+                strcpy(TmpData.m_Listname, m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupLstName);
+            else
+                strcpy(TmpData.m_Listname, m_LstInf[CurThreadNo].m_GroupLstName);
+            TmpData.m_ListNameLen = strlen(TmpData.m_Listname);
+            
+            //向群组队列发送指令
+            //   step 2: 打开List命令
+            if(TmpLstNOINF.m_FileNum == 0)
+                Work_StartList(CurThreadNo, pointer, &TmpData);
 #ifdef DEBUG
-		cout<<"start list"<<m_LstInf[CurThreadNo].m_GroupLstName<<endl;
+            if(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupLstName != NULL)
+                cout<<"start list"<<m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupLstName<<endl;
+            else
+                cout<<"start list"<<m_LstInf[CurThreadNo].m_GroupLstName<<endl;
 #endif
-		
-		//读取列表中的文件名存入datafile
-		iFileIdx = 0;
-		iSendNum = 0;
-		while(fgets(datafile, 300, fprLst))
-		{
+            
+            iFileIdx = 0;
+            iSendNum = 0;
+            while(fgets(datafile, 300, fprLst)) {
+                if(iFileIdx++ < TmpLstNOINF.m_FileNum) {
+                    LOG("skip File:%s", datafile);
+                    continue;
+                }
+                if(GetrealStr(datafile) <= 1)
+                    continue;
+                FILE* fprData = fopen(datafile, "rb");
+                if(NULL == fprData) {
+                    LOG("fuke: %s read error [%d]\n", datafile, errno);
+                    continue;
+                }
 
-			if( iFileIdx++ < TmpLstNOINF.m_FileNum )
-			{
-				LOG("Skip File:%s", datafile);
-				//EnterCriticalSection(&m_MainCri);
-				//m_LstNO[CurThreadNo].m_FileNum++;
-				//m_MainControl->UpdateLstNO(CurThreadNo);
-				//LeaveCriticalSection(&m_MainCri);
-				continue;
-			}
+                p = strrchr(datafile, '/');
+                if(NULL != p)
+                    strcpy(szFile, p + 1);
+                else
+                    strcpy(szFile, datafile);
 
-			if (GetrealStr(datafile) <= 1)
-				continue;
-			FILE *fprData = fopen(datafile,"rb");
-			if (NULL == fprData)
-			{
-				LOG("file: %s read error [%d]\n", datafile, errno);
-				continue;
-			}
-#ifdef NLOG
-			//printf("Read:%s\n", datafile);
-#endif
+                if(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupRoot != NULL)
+                    sprintf(TmpData.m_Filename, "%s/%s", m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupRoot, szFile);
+                else
+                    sprintf(TmpData.m_Filename, "%s/%s", m_LstInf[CurThreadNo].m_GroupRoot, szFile);
+                TmpData.m_FileNameLen = strlen(TmpData.m_Filename);
+                TmpData.m_FP = fprData;
+                m_LstInf[CurThreadNo].m_CurFileFP = fprData;
 
-			p = strrchr(datafile, '/');
-			if(p != NULL)
-				strcpy(szFile, p + 1);  //获取纯文件名
-			else
-				strcpy(szFile, datafile);
-			
-			if(0){// Added on 20131129 video rank文件名调换
-				char szRank_0[300];
-				char szRank_1[300];
+                // step 3:打开文件
 
-				strcpy(szRank_0, "Eps_VideoRank_0.dat");
-				strcpy(szRank_1, "Eps_VideoRank_1.dat");
+                Work_OpenFile(CurThreadNo, pointer, &TmpData);
 
-				if(strcmp(szRank_0, szFile) == 0)
-				{
-					strcpy(szFile, szRank_1);
-				}
-				else if(strcmp(szRank_1, szFile) == 0)
-				{
-					strcpy(szFile, szRank_0);
-				}
+                //step 4: 写入文件
 
-			}
-
-			//远程文件名
-			sprintf(TmpData.m_Filename, "%s/%s", m_LstInf[CurThreadNo].m_GroupRoot, szFile);
-			TmpData.m_FileNameLen = strlen(TmpData.m_Filename);
-
-			TmpData.m_FP = fprData;
-			m_LstInf[CurThreadNo].m_CurFileFP = fprData;
-
-			////////////////////////////////////////
-			//   step 3: 打开文件   
-			///////////////////////////////////////
-
-			Work_OpenFile(CurThreadNo, &TmpData);
-			
-			
-			
-			////////////////////////////////////////
-			//   step 4:写入文件   
-			//   MOD方式按模传输每一行数据，ALL方式按块传
-			///////////////////////////////////////
-			
-			for (k = 0; k < m_LstInf[CurThreadNo].m_RealGroupNum; k++)
-			{
-				rewind(fprData);  //指针移动到文件开头
-
-				if (m_LstInf[CurThreadNo].m_GroupInf[k].m_SendDataType == DF_SEND_DATA_MOD)
-				{
+                rewind(fprData);
+                if(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_SendDataType == DF_SEND_DATA_MOD) {
 #ifdef DEBUG
-					cout<<"MOD"<<endl;
+                    cout<<"MOD"<<endl;
 #endif
-					rstream_.pfr_ = fprData; 
-					ddwFileSize = Work_ModData(CurThreadNo, k, &TmpData, &rstream_);
-
-					LOG("%s, MOD[%lu Bytes]\n", datafile, ddwFileSize);
-				} 
-				else if (m_LstInf[CurThreadNo].m_GroupInf[k].m_SendDataType == DF_SEND_DATA_ALL)
-				{
-#ifdef DEBUG	
-					cout<<"ALL"<<endl;
+                    rstream_.pfr_ = fprData;
+                    ddwFileSize = Work_ModData(CurThreadNo, pointer, &TmpData, &rstream_);
+                    LOG("%s, MOD[%lu Bytes]\n", datafile, ddwFileSize);
+                }
+                else if(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_SendDataType == DF_SEND_DATA_ALL) {
+#ifdef DEBUG
+                    cout<<"ALL"<<endl;
 #endif
-					ddwFileSize = Work_ALLData(CurThreadNo, k, &TmpData, fprData);
-					LOG("%s, ALL[%lu Bytes]\n", datafile, ddwFileSize);
-					bverify = true;
+                    ddwFileSize = Work_ALLData(CurThreadNo, pointer, &TmpData, fprData);
+                    LOG("%s, ALL[%lu Bytes]\n", datafile, ddwFileSize);
+                    bverify = true;
+                }
 
-				}
+                fclose(fprData);
+                iSendNum ++;
 
-			}//end for sending data
+                // step 5:发送关闭文件的命令
 
-			fclose(fprData);
-			iSendNum ++;
+                Work_CloseFile(CurThreadNo, pointer, &TmpData);
+                sleep(1);
 
-			//LOG(" Open File:%s\n", datafile);
+                if(bverify)
+                    BuildMd5(datafile, strMd5, pBuf);
+            }
 
-			////////////////////////////////////////
-			//    step 5: 发送关闭文件的命令
-			///////////////////////////////////////
+            LOG("List %s Send [%d] Files\n", m_LstInf[CurThreadNo].m_CheckLstMName, iSendNum);
+            fclose(fprLst);
 
-			//TmpData.m_DataLength = iFileSize;
+            // step 6: verify Data
 
-			Work_CloseFile(CurThreadNo, &TmpData);
-			Sleep(1);
+            if(bverify) {
+                usleep(2000);
+                for(j = 0 ; j < m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum; j++) {
+                    while(m_pDataQue[CurThreadNo][pointer][j]->GetFreeNum() != m_MainControl->getQueSize())
+                        usleep(2000);
+                }
 
-			//Build Md5 file
-			//BuildMd5(datafile, strMd5);
+                sleep(1);
+                ret = Work_Verify(CurThreadNo, pointer);
+                if(ret) {
+                    char szMsg[300];
+                    snprintf(szMsg, sizeof(szMsg), "[%s Error]: %s Verity!",m_szLocalIp, szlstName);
+                    SendSmsNotify(szMsg);
+                    LOG("List %s Verity error, ret:[%d]!\n", szlstName, ret);
+                    m_MainControl->ResetLstNO(CurThreadNo);
+                    continue;
+                }
+            }
+            
+            //step 7: 发送关闭List的命令
+            Work_CloseList(CurThreadNo, pointer, &TmpData);
+            Work_MoveMD5File(CurThreadNo);
+        }
 
-			if(bverify)
-				BuildMd5(datafile, strMd5, pBuf);
-		}//end while （read data）
-		  
-		LOG("List %s Send [%d] Files\n", m_LstInf[CurThreadNo].m_CheckLstMName, iSendNum);
-		//TODO send message
-		
-		fclose(fprLst);
+        //step 8: 对List重命名，标记List处理完成
 
-		
-		//////////////////////////////////////////////
-		//    step 6: Verify Data
-		//////////////////////////////////////////////
+        char szTmpListName[300];
+        sprintf(szTmpListName, "%s.Finish", m_LstInf[CurThreadNo].m_CheckLstMName);
+        ret = rename(szlstName, szTmpListName);
+        if(ret)
+            LOG("rename error: %s -> %s, ret [%d], errno: %d\n",szlstName, szTmpListName, ret, errno);
+        LOG("rename: %s -> %s\n",szlstName, szTmpListName);
+    }
 
-		if(bverify)
-		{
-			usleep(2000);
-			/*
-			while(m_MainControl->m_Que->GetFreeNum() != 0)
-			{
-				usleep(1000);
-			}
-			*/
-			//sleep(1);
-
-			for (k = 0; k < m_LstInf[CurThreadNo].m_RealGroupNum; k++)
-			{
-				for (j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[k].m_RealServerNum; j++)
-				{
-					while(m_pDataQue[CurThreadNo][k][j]->GetFreeNum() != m_MainControl->getQueSize());
-					{
-						usleep(2000);
-					}
-				}
-
-			}
-
-			Sleep(1);
-
-			ret = Work_Verify(CurThreadNo);
-			if(ret)
-			{
-				//TODO msg
-				
-				char szMsg[300];
-				snprintf(szMsg, sizeof(szMsg), "[%s Error]: %s Verify!", m_szLocalIp, szlstName);
-				SendSmsNotify(szMsg);
-				LOG("List %s verify error, ret:[%d]!\n", szlstName, ret);
-
-				m_MainControl->ResetLstNO(CurThreadNo);
-				continue;
-			}
-
-		}
-		
-		////////////////////////////////////////
-		//    step 7: 发送关闭List的命令
-		///////////////////////////////////////
-		Work_CloseList(CurThreadNo, &TmpData);
-
-		Work_MoveMD5File(CurThreadNo);
-		//////////////////////////////////////////////
-		//    step 8: 对List重命名，标记List处理完成
-		//////////////////////////////////////////////
-		char szTmpListName[300];
-		sprintf(szTmpListName, "%s.Finish", m_LstInf[CurThreadNo].m_CheckLstMName);
-		ret = rename(szlstName, szTmpListName);
-		if(ret)
-			LOG("rename error: %s -> %s, ret [%d], errno: %d\n", szlstName, szTmpListName, ret, errno);
-		LOG("rename: %s -> %s\n", szlstName, szTmpListName);
-
-		//TODO reset LstNO Info
-		//m_MainControl->ResetLstNO(CurThreadNo);
-		//OnListSendPerDay(1, iSendNum);
-
-	}//end for (;1;)
-
-	delete[] RBuf;
-	delete[] pBuf;
-	delete p;
-	return 0;
+    delete[] RBuf;
+    delete[] pBuf;
+    delete p;
+    return 0;
 }
 
 int CQSEPSDF_CS::Main_Command(int LNo, int GNo, int SNo)
