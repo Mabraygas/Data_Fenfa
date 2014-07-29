@@ -39,15 +39,22 @@ CQSEPSDF_CS::CQSEPSDF_CS()
 	m_LstNum = MAX_LST_NUM;
     m_FileNum = FILE_NUM;
 	m_ThreadNO = 0;
-    m_LstInf = new _LST_INF_[MAX_LST_NUM];
-    m_FileInf = new _SF_INF_[FILE_NUM];
-    m_pDataQue = new QueEvent***[MAX_LST_NUM];
-    for(int p = 0 ; p < MAX_LST_NUM ; p ++ ) {
+    m_LstInf = new _LST_INF_[MAX_LST_NUM + FILE_NUM];
+    m_pDataQue = new QueEvent***[MAX_LST_NUM + FILE_NUM];
+    for(int p = 0 ; p < MAX_LST_NUM + FILE_NUM ; p ++ ) {
         m_pDataQue[p] = new QueEvent**[MAX_GROUP_NUM];
         for(int q = 0 ; q < MAX_GROUP_NUM ; q ++ ) {
             m_pDataQue[p][q] = new QueEvent*[MAX_S_NUM_AGROUP];
         }
     }
+    
+    for(int p = 0; p < FILE_NUM; p++) {
+        char filename[10];
+        snprintf(filename, sizeof(filename),"%d%s",p,".lst");
+        FILE* newfile = fopen(filename, "w");
+        fclose(newfile);
+    }
+    
 }
 
 CQSEPSDF_CS::~CQSEPSDF_CS()
@@ -55,14 +62,18 @@ CQSEPSDF_CS::~CQSEPSDF_CS()
 	DeleteCriticalSection(&m_MainCri);
 	delete m_MainControl;
     delete[] m_LstInf;
-    delete[] m_FileInf;
-    for(int p = 0 ; p < MAX_LST_NUM ; p ++ ) {
+    for(int p = 0 ; p < MAX_LST_NUM + FILE_NUM ; p ++ ) {
         for(int q = 0 ; q < MAX_GROUP_NUM ; q ++ ) {
             delete []m_pDataQue[p][q];
         }
         delete []m_pDataQue[p];
     }
     delete []m_pDataQue;
+    for(int p = 0; p < FILE_NUM; p++){
+        char filename[20];
+        snprintf(filename, sizeof(filename),"%d%s",p,".lst.Finish");
+        remove(filename);
+    }
 }
 
 int CQSEPSDF_CS::getLocalIP(char* outip)
@@ -125,8 +136,8 @@ int CQSEPSDF_CS::InitSys(CQSEPSDF_MainControl* pMain)
 		LOG("Load Info error, return %d\n", Ret);
 		return Ret; 
 	}
-	int i(0),j(0),k(0),p(0),q(0);
-	for(i = 0; i < m_LstNum; i++)
+	int i(0),j(0),k(0);
+	for(i = 0; i < m_LstNum + FILE_NUM; i++)
 	{
 		for(j = 0; j < m_LstInf[i].m_RealGroupNum; j++)
 		{
@@ -138,7 +149,7 @@ int CQSEPSDF_CS::InitSys(CQSEPSDF_MainControl* pMain)
 		}
 	}
 
-	m_MainControl->ReadLstNO(m_LstNum);
+	m_MainControl->ReadLstNO(m_LstNum + FILE_NUM);
 	getLocalIP(m_szLocalIp);
 	
 	LOG("===========================DFS client Initializes successfully!===========================\n");
@@ -151,7 +162,7 @@ int CQSEPSDF_CS::InitSys(CQSEPSDF_MainControl* pMain)
 int CQSEPSDF_CS::LoadAllINF()
 {
    int i,j,k,p,q;
-   for (i=0; i<MAX_LST_NUM; i++)
+   for (i=0; i<MAX_LST_NUM + FILE_NUM; i++)
    {
 	    m_LstInf[i].m_RealGroupNum = 0;
 		m_LstInf[i].m_CheckLstMName[0] = 0;
@@ -238,9 +249,6 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
                 file_find = 1;
                 break;
            }
-           else if(strcmp(attributeOfList->Name(), "FileRoot") == 0) {
-                
-           }
            else if(strcmp(attributeOfList->Name(), "name") == 0)
 		   {
 			   strcpy(m_LstInf[i].m_CheckLstMName, attributeOfList->Value());
@@ -317,39 +325,57 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
 
    } 
    m_LstNum = i;
-
+////////////////////////////////////////Í³¼Æfile×Ö¶Î////////////////////////////////////////
     for(p = 0; ListElement != NULL; ListElement = ListElement->NextSiblingElement(), p++) {
         TiXmlAttribute* attributeOfFile = ListElement->FirstAttribute();
         for(; attributeOfFile != NULL; attributeOfFile = attributeOfFile->Next()) {
             if(strcmp(attributeOfFile->Name(), "Source") == 0) {
-                ;
+                char filecontent[300];
+                char filename[10];
+                snprintf(filecontent, sizeof(filecontent), "%s",attributeOfFile->Value());
+                snprintf(filename, sizeof(filename), "%d%s", p, ".lst");
+                printf("%s %s\n",filecontent, filename);
+                FILE* filewrite = fopen(filename, "at+");
+                fputs(filecontent, filewrite);
+                fclose(filewrite);
+                strcpy(m_LstInf[i + p].m_CheckLstMName, attributeOfFile->Value());
             }
             else if(strcmp(attributeOfFile->Name(), "FileRoot") == 0) {
-                ;
+                strcpy(m_LstInf[i + p].m_GroupRoot, attributeOfFile->Value());
+                int iLen = strlen(m_LstInf[i].m_GroupRoot);
+                if(m_LstInf[i + p].m_GroupRoot[iLen - 1] == '/')
+                    m_LstInf[i + p].m_GroupRoot[iLen - 1] = '\0';
+                char fileroot[300];
+                snprintf(fileroot, sizeof(fileroot), "%s%c%d%s", m_LstInf[i + p].m_GroupRoot, '/', p, ".lst");
+                strcpy(m_LstInf[i + p].m_GroupLstName, fileroot);
             }
             else if(strcmp(attributeOfFile->Name(), "SendDataType") == 0) {
-                ;
+                m_LstInf[i + p].m_GroupInf[0].m_SendDataType = attributeOfFile->IntValue();
             }
             else if(strcmp(attributeOfFile->Name(), "ServerNumber") == 0) {
-                ;
+                m_LstInf[i + p].m_GroupInf[0].m_RealServerNum = attributeOfFile->IntValue();
             }
         }
+        m_LstInf[i + p].m_RealGroupNum = 1;
+
 
         TiXmlElement* ServerElememt = ListElement->FirstChildElement();
         for(q = 0; ServerElememt != NULL; ServerElememt = ServerElememt->NextSiblingElement(), q++) {
             TiXmlAttribute* attributeOfServer = ServerElememt->FirstAttribute();
             for(; attributeOfServer != NULL; attributeOfServer = attributeOfServer->Next()) {
                 if(strcmp(attributeOfServer->Name(), "ServerNo") == 0) {
-                    ;
+                    m_LstInf[i + p].m_GroupInf[0].m_Server[q].m_ServerNO = attributeOfServer->IntValue();
                 }
                 else if(strcmp(attributeOfServer->Name(), "IP") == 0) {
-                    ;
+                    strcpy(m_LstInf[i + p].m_GroupInf[0].m_Server[q].m_ServerIPStr, attributeOfServer->Value());
                 }
                 else if(strcmp(attributeOfServer->Name(), "Port") == 0) {
-                    ;
+                    m_LstInf[i + p].m_GroupInf[0].m_Server[q].m_ServerPort = attributeOfServer->IntValue();
                 }
             }
         }
+        m_LstInf[i + p].m_GroupInf[0].m_RealServerNum = q;
+        m_LstInf[i + p].m_RealGroupNum = 1;
     }
     
    return 0;
@@ -1525,7 +1551,7 @@ int CQSEPSDF_CS::Main_Command(int LNo, int GNo, int SNo)
 
    //printf("%s: LstNo:%d,GrpNo:%d,SrvNo:%d,this:%p\n",__FUNCTION__, CurLstNo, CurGroupNO, CurServerNO, this);
 
-   if(LNo > MAX_LST_NUM || GNo > MAX_GROUP_NUM || SNo > MAX_S_NUM_AGROUP)
+   if(LNo > MAX_LST_NUM + FILE_NUM || GNo > MAX_GROUP_NUM || SNo > MAX_S_NUM_AGROUP)
    {
 #ifdef NLOG
 	   printf("(%s:%d): error\n", __FUNCTION__, __LINE__);
@@ -1698,7 +1724,7 @@ int CQSEPSDF_CS::Start()
 	int ret = 0 ;
 	int  i(0),j(0),k(0);
 
-	for ( i = 0; i < m_LstNum; i++ )
+	for ( i = 0; i < m_LstNum + FILE_NUM; i++ )
 	{	
 		if ((ret = pthread_create(&dwId1,NULL,&Thread_MainWork,(void *)this)) < 0 )
 		{
@@ -1709,7 +1735,7 @@ int CQSEPSDF_CS::Start()
 	}
 	
 	
-	for ( i = 0; i < m_LstNum; i++ )
+	for ( i = 0; i < m_LstNum + FILE_NUM; i++ )
 	{
 		for ( j = 0; j < m_LstInf[i].m_RealGroupNum; j++ )
 		{

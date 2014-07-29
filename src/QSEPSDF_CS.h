@@ -28,7 +28,6 @@ public:
 	int m_LstNum;
     int m_FileNum;
     _LST_INF_* m_LstInf;
-    _SF_INF_* m_FileInf;
 	CRITICAL_SECTION m_MainCri;
 	int m_ThreadNO;
 

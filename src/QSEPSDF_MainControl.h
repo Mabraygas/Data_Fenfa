@@ -56,7 +56,7 @@
 
 #define MAX_FILE_NUM            2000                            //文件名队列最大文件数
 
-extern int MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP, FILE_NUM, MAX_S_NUM_AFILE;
+extern int MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP, FILE_NUM;
 
 using namespace eagle;
 
@@ -110,22 +110,6 @@ typedef struct ListInf
 	char                    m_GroupRoot[300];              //存入服务器文件的路径
 	FILE*                   m_CurFileFP;                   //当前服务器在操作的对方写文件的句柄
 }_LST_INF_;
-
-typedef struct SingleFileInf
-{
-    SingleFileInf() {
-        m_Server = new _SERVER_INF_[MAX_S_NUM_AGROUP]; 
-    }
-    ~SingleFileInf() {
-        delete[] m_Server;
-    }
-    char                    m_GroupRoot[300];
-    char                    m_GroupLstName[300];
-    FILE*                   m_CurFileFP;
-    int                     m_SendDataType;
-    unsigned __int64        m_CurCheckKey;
-    _SERVER_INF_*           m_Server;
-}_SF_INF_;
 
 typedef struct DataField 
 {
