@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<Soku ListNumber="1" FileNumber="1">
+<Soku ListNumber="2" FileNumber="0">
     <List name="/root/projects/UKS_DF_proj/src/Video.lst" key="0" GroupRoot="/opt/maguangxu" GroupListName="/opt/maguangxu/Video.lst" GroupNumber="3">
         <Group GroupNo="0" SendDataType="2" ServerNumber="1" GroupRoot="/opt/maguangxu" GroupListName="/opt/maguangxu/Video.lst">
             <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
@@ -14,12 +14,27 @@
         </Group>
     </List>
 
-    <File Source="/root/projects/test.cpp" FileRoot="/opt/maguangxu/uguess" SendDataType="2" ServerNumber="2">
+    <!--
+    <List name="/root/projects/UKS_DF_proj/src/Video.lst" key="1" GroupRoot="/opt/maguangxu" GroupListName="/opt/maguangxu/Video.lst" GroupNumber="3">
+        <Group GroupNo="0" SendDataType="2" ServerNumber="1" GroupRoot="/opt/maguangxu/0" GroupListName="/opt/maguangxu/0/Video.lst">
+            <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
+        </Group>
+
+        <Group GroupNo="1" SendDataType="2" ServerNumber="1" GroupRoot="/opt/maguangxu/1" GroupListName="/opt/maguangxu/1/Video.lst">
+            <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
+        </Group>
+
+        <Group GroupNo="2" SendDataType="2" ServerNumber="1" GroupRoot="/opt/maguangxu/2" GroupListName="/opt/maguangxu/2/Video.lst">
+            <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
+        </Group>
+    </List>
+    -->
+    <File Source="/root/projects/test2.cpp" FileRoot="/opt/maguangxu/uguess" SendDataType="2" ServerNumber="1">
         <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
-        <Server ServerNo="1" IP="10.103.16.15" Port="11111"></Server>
     </File>
 
-    <File Source="/root/projects/test.cpp" FileRoot="/opt/maguangxu/iguess" SendDataType="2" ServerNumber="2">
+    <File Source="/root/projects/test3.cpp" FileRoot="/opt/maguangxu/iguess" SendDataType="2" ServerNumber="1">
         <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
     </File>
+
 </Soku>

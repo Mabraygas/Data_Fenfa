@@ -19,7 +19,7 @@ CQSEPSDF_MainControl::CQSEPSDF_MainControl()
 	m_Que = NULL;
 	m_CMem = NULL;
 	m_DataF = NULL;
-    m_LstNO = new _LSTNO_[MAX_LST_NUM];
+    m_LstNO = new _LSTNO_[MAX_LST_NUM + FILE_NUM];
 }
 
 CQSEPSDF_MainControl::~CQSEPSDF_MainControl()
@@ -29,16 +29,14 @@ CQSEPSDF_MainControl::~CQSEPSDF_MainControl()
 
 int CQSEPSDF_MainControl::MainInitSys(void **obj,int QueSize,char* Dpath)
 {
-	int i =0;
+    int i =0;
 	for (i = 0;i<2;i++)
 	{
 		m_abstract[i] = obj[i];
 	}
-
 	m_QueSize = QueSize;
 	m_Que     = new QueEvent(m_QueSize);
 	m_DataF   = new DataField[m_QueSize];
-
 
 	for (i = 0;i<m_QueSize;i++)
 	{
@@ -104,7 +102,7 @@ int CQSEPSDF_MainControl::GetAFreeField(_DFIELD_* &pData, _DFIELD_& CurData)
 {
    
 	int QueNO =  m_Que->Pop();
-	if (QueNO < 0)
+    if (QueNO < 0)
 	{
 		return -1;
 	}
@@ -226,7 +224,7 @@ int CQSEPSDF_MainControl::ReadLstNO(const int iLstNum)
 		pLstNO = m_LstNO + i;
 
 		FILE *fpr = fopen(filename,"rb");
-		if (NULL == fpr)
+        if (NULL == fpr)
 		{
 			pLstNO->m_AllSize = 0;
 			pLstNO->m_FileNum = 0;

@@ -31,7 +31,7 @@ DataVerify::DataVerify()
 {
 	m_LstNum = MAX_LST_NUM;
 	m_tid    = 0;
-    m_LstInf = new vList[MAX_LST_NUM];
+    m_LstInf = new vList[MAX_LST_NUM + FILE_NUM];
 }
 
 DataVerify::~DataVerify()
@@ -60,7 +60,7 @@ int DataVerify::InitSys(const char* config)
 int DataVerify::LoadAllINF(const char* config)
 {
    int i,j;
-   for (i=0; i<MAX_LST_NUM; i++)
+   for (i=0; i<MAX_LST_NUM + FILE_NUM; i++)
    {
 	    m_LstInf[i].m_RealGroupNum = 0;
 		m_LstInf[i].m_CheckLstMName[0] = 0;

@@ -2,8 +2,8 @@
  * @file CQSEPSDF_CS.cpp
  * @brief 分发客户端
  * @author Yuantu
- * @version ver 1.0
- * @date 2012-09-24
+ * @version ver 1.1
+ * @date 2014-07-30
  */
 
 #include <string>
@@ -47,12 +47,18 @@ CQSEPSDF_CS::CQSEPSDF_CS()
             m_pDataQue[p][q] = new QueEvent*[MAX_S_NUM_AGROUP];
         }
     }
-    
+   
+    /*********************************
+      根据配置文件中FILE字段个数，新建相应个数的.lst文件
+      用来储存FILE的位置
+      并在析构函数中删除该.lst.finish文件
+      *******************************/
     for(int p = 0; p < FILE_NUM; p++) {
         char filename[10];
         snprintf(filename, sizeof(filename),"%d%s",p,".lst");
         FILE* newfile = fopen(filename, "w");
         fclose(newfile);
+        newfile = NULL;
     }
     
 }
@@ -62,13 +68,16 @@ CQSEPSDF_CS::~CQSEPSDF_CS()
 	DeleteCriticalSection(&m_MainCri);
 	delete m_MainControl;
     delete[] m_LstInf;
-    for(int p = 0 ; p < MAX_LST_NUM + FILE_NUM ; p ++ ) {
+    for(int p = 0 ; p < MAX_LST_NUM + FILE_NUM; p ++ ) {
         for(int q = 0 ; q < MAX_GROUP_NUM ; q ++ ) {
             delete []m_pDataQue[p][q];
         }
         delete []m_pDataQue[p];
     }
     delete []m_pDataQue;
+    /*********************************
+      删除临时创建的.lst ==> .lst.finish文件
+      *******************************/
     for(int p = 0; p < FILE_NUM; p++){
         char filename[20];
         snprintf(filename, sizeof(filename),"%d%s",p,".lst.Finish");
@@ -245,7 +254,12 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
 	   file_find = 0;
        TiXmlAttribute* attributeOfList = ListElement->FirstAttribute(); 
 	   for (;attributeOfList != NULL; attributeOfList = attributeOfList->Next() ) {  
-		   if(strcmp(attributeOfList->Name(), "Source") == 0) {
+		   /*******************************
+             如果读到了Source属性，说明List信息已经结束了，只够也不会出现了
+             所以直接break
+             进入处理File字段部分
+             *******************************/
+           if(strcmp(attributeOfList->Name(), "Source") == 0) {
                 file_find = 1;
                 break;
            }
@@ -268,7 +282,7 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
 		   }else if(strcmp(attributeOfList->Name(), "GroupNumber") == 0)
 		   {
 			   m_LstInf[i].m_RealGroupNum = attributeOfList->IntValue();
-		   }
+           }
 	   }
         if(file_find) 
             break;
@@ -325,7 +339,12 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
 
    } 
    m_LstNum = i;
-////////////////////////////////////////统计file字段////////////////////////////////////////
+    /*******************************
+      处理File字段部分
+      核心思想：将file结构变化成list结构，
+                该list含有1个group
+                这个group的server数等于file的server属性值
+      *******************************/
     for(p = 0; ListElement != NULL; ListElement = ListElement->NextSiblingElement(), p++) {
         TiXmlAttribute* attributeOfFile = ListElement->FirstAttribute();
         for(; attributeOfFile != NULL; attributeOfFile = attributeOfFile->Next()) {
@@ -334,20 +353,26 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
                 char filename[10];
                 snprintf(filecontent, sizeof(filecontent), "%s",attributeOfFile->Value());
                 snprintf(filename, sizeof(filename), "%d%s", p, ".lst");
-                printf("%s %s\n",filecontent, filename);
-                FILE* filewrite = fopen(filename, "at+");
+                FILE* filewrite = fopen(filename, "w");
                 fputs(filecontent, filewrite);
                 fclose(filewrite);
-                strcpy(m_LstInf[i + p].m_CheckLstMName, attributeOfFile->Value());
+                filewrite = NULL;
+                char fileOrigin[300];
+                char cdNow[100];
+                getcwd(cdNow, sizeof(cdNow));
+                snprintf(fileOrigin, sizeof(fileOrigin), "%s%c%s", cdNow, '/', filename);
+                strcpy(m_LstInf[i + p].m_CheckLstMName, fileOrigin);
             }
             else if(strcmp(attributeOfFile->Name(), "FileRoot") == 0) {
                 strcpy(m_LstInf[i + p].m_GroupRoot, attributeOfFile->Value());
                 int iLen = strlen(m_LstInf[i].m_GroupRoot);
                 if(m_LstInf[i + p].m_GroupRoot[iLen - 1] == '/')
                     m_LstInf[i + p].m_GroupRoot[iLen - 1] = '\0';
+                strcpy(m_LstInf[i + p].m_GroupInf[0].m_GroupRoot, m_LstInf[i + p].m_GroupRoot);
                 char fileroot[300];
                 snprintf(fileroot, sizeof(fileroot), "%s%c%d%s", m_LstInf[i + p].m_GroupRoot, '/', p, ".lst");
                 strcpy(m_LstInf[i + p].m_GroupLstName, fileroot);
+                strcpy(m_LstInf[i + p].m_GroupInf[0].m_GroupLstName, m_LstInf[i + p].m_GroupLstName);
             }
             else if(strcmp(attributeOfFile->Name(), "SendDataType") == 0) {
                 m_LstInf[i + p].m_GroupInf[0].m_SendDataType = attributeOfFile->IntValue();
@@ -357,8 +382,6 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
             }
         }
         m_LstInf[i + p].m_RealGroupNum = 1;
-
-
         TiXmlElement* ServerElememt = ListElement->FirstChildElement();
         for(q = 0; ServerElememt != NULL; ServerElememt = ServerElememt->NextSiblingElement(), q++) {
             TiXmlAttribute* attributeOfServer = ServerElememt->FirstAttribute();
@@ -375,9 +398,7 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
             }
         }
         m_LstInf[i + p].m_GroupInf[0].m_RealServerNum = q;
-        m_LstInf[i + p].m_RealGroupNum = 1;
     }
-    
    return 0;
 }
 
@@ -611,7 +632,6 @@ int CQSEPSDF_CS::EndALst(_DFIELD_ *pData,ServerInf * pServer)
 	//关闭连接
 	pServer->m_ServerHand->close();
 #ifdef NLOG
-	//cout<<"End List:"<<pData->m_Listname<<endl;
 #endif
 	LOG("Close List[%s:%d]:%s\n", pServer->m_ServerIPStr, pServer->m_ServerPort, pData->m_Listname);
 
@@ -787,12 +807,11 @@ int CQSEPSDF_CS::Work_StartList(const int32_t CurThreadNo, const int pointer,_DF
 		do 
 		{
 			result = m_MainControl->GetAFreeField(pStartData, StartData);
-			if (result)
+            if (result)
 			{
 				Sleep(1);
 			}
 		} while (result);
-		
 		pStartData->m_OperateType = DF_START_LST;
 		pStartData->m_DataLength = 0;
 		pStartData->m_FP  = NULL;
@@ -1125,6 +1144,9 @@ int CQSEPSDF_CS::Work_Verify(const int32_t CurThreadNo, const int pointer)
 		
 		//远程文件名
         //for(int i = 0; i < m_LstInf[CurThreadNo].m_RealGroupNum; i++) {
+            /*******************************
+              先看Group属性中，GroupRoot是否为空，如果不是，则取Group重的GroupRoot,忽略List中的
+              *******************************/
             if(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupRoot != NULL)
                 sprintf(szremote, "%s/%s", m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupRoot, szFile);
             else if(m_LstInf[CurThreadNo].m_GroupRoot != NULL)
@@ -1203,7 +1225,7 @@ int CQSEPSDF_CS::Work_MoveMD5File(const int32_t CurThreadNo)
 		if (GetrealStr(szlocal) <= 1)
 			continue;
 		sprintf(szmd5, "%s.md5", szlocal);
-		remove(szmd5);
+        remove(szmd5);
 	}
 	fclose(fprLst);
 
@@ -1421,11 +1443,11 @@ int CQSEPSDF_CS::MainWork()
             else
                 strcpy(TmpData.m_Listname, m_LstInf[CurThreadNo].m_GroupLstName);
             TmpData.m_ListNameLen = strlen(TmpData.m_Listname);
-            
             //向群组队列发送指令
             //   step 2: 打开List命令
-            if(TmpLstNOINF.m_FileNum == 0)
+            if(TmpLstNOINF.m_FileNum == 0) {
                 Work_StartList(CurThreadNo, pointer, &TmpData);
+            }
 #ifdef DEBUG
             if(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupLstName != NULL)
                 cout<<"start list"<<m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupLstName<<endl;
@@ -1461,7 +1483,6 @@ int CQSEPSDF_CS::MainWork()
                 TmpData.m_FileNameLen = strlen(TmpData.m_Filename);
                 TmpData.m_FP = fprData;
                 m_LstInf[CurThreadNo].m_CurFileFP = fprData;
-
                 // step 3:打开文件
 
                 Work_OpenFile(CurThreadNo, pointer, &TmpData);
@@ -1490,7 +1511,6 @@ int CQSEPSDF_CS::MainWork()
                 iSendNum ++;
 
                 // step 5:发送关闭文件的命令
-
                 Work_CloseFile(CurThreadNo, pointer, &TmpData);
                 sleep(1);
 
@@ -1500,7 +1520,6 @@ int CQSEPSDF_CS::MainWork()
 
             LOG("List %s Send [%d] Files\n", m_LstInf[CurThreadNo].m_CheckLstMName, iSendNum);
             fclose(fprLst);
-
             // step 6: verify Data
 
             if(bverify) {
@@ -1521,14 +1540,12 @@ int CQSEPSDF_CS::MainWork()
                     continue;
                 }
             }
-            
             //step 7: 发送关闭List的命令
             Work_CloseList(CurThreadNo, pointer, &TmpData);
             Work_MoveMD5File(CurThreadNo);
         }
 
         //step 8: 对List重命名，标记List处理完成
-
         char szTmpListName[300];
         sprintf(szTmpListName, "%s.Finish", m_LstInf[CurThreadNo].m_CheckLstMName);
         ret = rename(szlstName, szTmpListName);

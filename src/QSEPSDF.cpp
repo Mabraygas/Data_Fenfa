@@ -60,7 +60,6 @@ int main(int argc, char* argv[])
 		{
 			iQueSize = atoi(argv[2]);
 		}
-
 		dfMainControl.MainInitSys(aAbstract, iQueSize , szDataRoot);
 		dfClient.InitSys(&dfMainControl);
 		ret = dfClient.Start();

@@ -1,5 +1,7 @@
 /**
   * @file CountNumber.cpp
+  * @brief 统计配置文件中List Group Server
+  *        File个数，动态申请m_LstInf等成员数组，从而节省内存
   * @author Maguangxu
   * @version ver 1.0
   * @dat 2014-07-23
@@ -12,7 +14,8 @@ int CountNumber(int& MAX_LST_NUM, int& MAX_GROUP_NUM, int& MAX_S_NUM_AGROUP, int
     TiXmlDocument doc;
     if(!doc.LoadFile(xmlFile))
         return -1;
-    MAX_GROUP_NUM = MAX_LST_NUM = MAX_S_NUM_AGROUP = FILE_NUM = 0;
+    MAX_LST_NUM = FILE_NUM = 0;
+    MAX_GROUP_NUM = MAX_S_NUM_AGROUP = 1;
     int i = 0, j = 0, k = 0, p = 0, q = 0;
     int file_find = 0;
     TiXmlElement* rootElement = doc.RootElement();

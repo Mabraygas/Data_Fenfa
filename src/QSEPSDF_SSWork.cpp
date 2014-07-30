@@ -166,7 +166,6 @@ int QSEPSDF_SSWork::BuildMd5(const char* szFile, string& strmd5, char* pBuf)
 
 	char szTmpFile[300] = {0};
 	sprintf(szTmpFile, "%s.df", szFile);
-
 	MD5 md5;
 	struct stat stbuf;
 	stat(szTmpFile, &stbuf);
@@ -264,7 +263,7 @@ void QSEPSDF_SSWork::OpenAFile(const RecvData &recv)
 		string strFile = string(tmpData.m_Filename);
 		char szMd5[300];
 		sprintf(szMd5, "%s.md5", tmpData.m_Filename);
-		remove(szMd5);
+        remove(szMd5);
 		//检查m_mapNameFile中是否已经有记录
 		if(m_mapNameFile.find(strFile) != m_mapNameFile.end())
 		{
@@ -275,7 +274,6 @@ void QSEPSDF_SSWork::OpenAFile(const RecvData &recv)
 		}
 
 		sprintf(szTmpFile, "%s.df", tmpData.m_Filename);
-
 		//FILE* fpw = fopen(tmpData.m_Filename, "wb"); 
 		FILE* fpw = fopen(szTmpFile, "wb"); 
 		if(!fpw)
@@ -693,7 +691,6 @@ void QSEPSDF_SSWork::RemoveFile(const RecvData &recv)
 		LOG("Remove '%s' error, errno:[%d]\n", tmpData.m_Filename, errno);
 		tmpData.m_Result = -1;
 	}
-
 	string msg;
 	BuildResponsePack(msg, &tmpData);
 
@@ -1520,7 +1517,7 @@ void QSEPSDF_SSWork::KillProcess(const RecvData &recv)
 
 			fclose(fpr);
 			remove(szPID);
-		}
+        }
 	}
 
 	string result;

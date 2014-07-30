@@ -145,14 +145,14 @@ public:
 	int Pop()
 	{
 		int lRet = 0;
-		while(1)
+        while(1)
 		{
 			EnterCriticalSection(&cri);
 			if(lNum <= 0)
 			{
 				LeaveCriticalSection(&cri);
 				//Sleep(1);
-				return -1 ;
+                return -1 ;
 			}
 			lRet = lpQue[lBegin ++];
 			if(lBegin >= lSize)
