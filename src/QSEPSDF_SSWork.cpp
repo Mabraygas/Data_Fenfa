@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <time.h>
 
 #include "QSEPSDF_SSWork.h"
 #include "DayLog.h"
@@ -603,7 +604,6 @@ void QSEPSDF_SSWork::CloseAFile(const RecvData &recv)
 void QSEPSDF_SSWork::CloseAList(const RecvData &recv)
 {
 	const char *psBuf = (recv.buffer).c_str();
-
 	_DFIELD_ tmpData;
 
 	tmpData.m_OperateType = *(uint32_t *)psBuf;
@@ -616,24 +616,38 @@ void QSEPSDF_SSWork::CloseAList(const RecvData &recv)
 	psBuf += 4;
 	snprintf(tmpData.m_Listname, tmpData.m_ListNameLen + 1, "%s", psBuf);
 	psBuf += tmpData.m_ListNameLen;
-
+	tmpData.m_DatePrint   = *(uint32_t*)psBuf;
+	psBuf += 4;
 	//printf("Close List '%s'\n", tmpData.m_Listname);
 
+	/********************************
+	  获取系统当前日期
+	  ******************************/
+	time_t nowtime;
+	time(&nowtime);
+	struct tm* ConvertedTime;
+	ConvertedTime = gmtime(&nowtime);
+	char TimeString[300];
+	snprintf(TimeString, sizeof(TimeString), ConvertedTime->tm_mon > 8 ? ".%d%d%d" : ".%d0%d%d", 1900 + ConvertedTime->tm_year, 1 + ConvertedTime->tm_mon, ConvertedTime->tm_mday);
 	tmpData.m_Result = 0;
 	string strListName = string(tmpData.m_Listname);
+	//if(tmpData.m_DatePrint == 1)
+	//	strListName += string(TimeString);
+	//cout<<tmpData.m_DatePrint<<" "<<strListName<<endl;	
 	if(m_mapList.find(strListName) != m_mapList.end())
 	{
 		fclose(m_mapList[strListName]);
 		m_mapList.erase(strListName);
 
 		string strTmpList = strListName + ".dftmp";
+		if(tmpData.m_DatePrint == 1)
+			strListName += string(TimeString);
 		if(rename(strTmpList.c_str(), strListName.c_str()))
 		{
 			LOG("rename: %s -> %s, errno:[%d]\n", strTmpList.c_str(), strListName.c_str(), errno);
 			tmpData.m_Result = -1;
 		}
 		LOG("rename: %s -> %s\n", strTmpList.c_str(), strListName.c_str());
-
 		//create send end symbol
 		/*
 		char szSymbol[300];

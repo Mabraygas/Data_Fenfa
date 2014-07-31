@@ -89,7 +89,7 @@ typedef struct GroupInf
 	//CRITICAL_SECTION		m_Cri;                         //当前组的锁，用于做归零计算使用
     char                    m_GroupRoot[300];              //存入服务器文件的路径
     char                    m_GroupLstName[300];           //服务器列表的名称
-
+    int                     m_DatePrint;
 }_GINF_;
 
 typedef struct ListInf 
@@ -109,6 +109,7 @@ typedef struct ListInf
 	char                    m_GroupLstName[300];           //服务器列表的名称
 	char                    m_GroupRoot[300];              //存入服务器文件的路径
 	FILE*                   m_CurFileFP;                   //当前服务器在操作的对方写文件的句柄
+    int                     m_DatePrint;
 }_LST_INF_;
 
 typedef struct DataField 
@@ -129,7 +130,8 @@ typedef struct DataField
 	int                     m_Result;                      //操作是否成功的标志
     CRITICAL_SECTION        m_Cri;                         //临界点加锁标志
 	int                     m_FreeSymbole;                 //数据内存可以释放的标志  临界点为0 完成一次就递减
-	/*
+	int                     m_DatePrint;                   //服务端.lst or .lst.(date) 标志
+    /*
 	~DataField()
 	{
 		DeleteCriticalSection(m_Cri);

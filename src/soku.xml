@@ -1,11 +1,11 @@
 <?xml version="1.0" ?>
 <Soku ListNumber="2" FileNumber="0">
-    <List name="/root/projects/UKS_DF_proj/src/Video.lst" key="0" GroupRoot="/opt/maguangxu" GroupListName="/opt/maguangxu/Video.lst" GroupNumber="3">
-        <Group GroupNo="0" SendDataType="2" ServerNumber="1" GroupRoot="/opt/maguangxu" GroupListName="/opt/maguangxu/Video.lst">
+    <List name="/root/projects/UKS_DF_proj/src/Video.lst" key="0" GroupRoot="/opt/maguangxu" GroupListName="/opt/maguangxu/Video.lst" GroupNumber="3" DatePrint="0">
+        <Group GroupNo="0" SendDataType="2" ServerNumber="1" GroupRoot="/opt/maguangxu" GroupListName="/opt/maguangxu/Video.lst" DatePrint="0">
             <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
         </Group>
 
-        <Group GroupNo="1" SendDataType="2" ServerNumber="1" GroupRoot="/opt/maguangxu/there" GroupListName="/opt/maguangxu/there/Video.lst">
+        <Group GroupNo="1" SendDataType="2" ServerNumber="1" GroupRoot="/opt/maguangxu/there" GroupListName="/opt/maguangxu/there/Video.lst" DatePrint="1">
             <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
         </Group>
 
@@ -14,22 +14,7 @@
         </Group>
     </List>
 
-    <!--
-    <List name="/root/projects/UKS_DF_proj/src/Video.lst" key="1" GroupRoot="/opt/maguangxu" GroupListName="/opt/maguangxu/Video.lst" GroupNumber="3">
-        <Group GroupNo="0" SendDataType="2" ServerNumber="1" GroupRoot="/opt/maguangxu/0" GroupListName="/opt/maguangxu/0/Video.lst">
-            <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
-        </Group>
-
-        <Group GroupNo="1" SendDataType="2" ServerNumber="1" GroupRoot="/opt/maguangxu/1" GroupListName="/opt/maguangxu/1/Video.lst">
-            <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
-        </Group>
-
-        <Group GroupNo="2" SendDataType="2" ServerNumber="1" GroupRoot="/opt/maguangxu/2" GroupListName="/opt/maguangxu/2/Video.lst">
-            <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
-        </Group>
-    </List>
-    -->
-    <File Source="/root/projects/test2.cpp" FileRoot="/opt/maguangxu/uguess" SendDataType="2" ServerNumber="1">
+    <File Source="/root/projects/test2.cpp" FileRoot="/opt/maguangxu/uguess" SendDataType="2" ServerNumber="1" DatePrint="1">
         <Server ServerNo="0" IP="10.103.16.81" Port="11111"></Server>
     </File>
 

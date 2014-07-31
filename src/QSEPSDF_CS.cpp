@@ -177,15 +177,17 @@ int CQSEPSDF_CS::LoadAllINF()
 		m_LstInf[i].m_CheckLstMName[0] = 0;
 		m_LstInf[i].m_CurLstKey =  0;
 		m_LstInf[i].m_CurFileFP = NULL;
-		*m_LstInf[i].m_GroupRoot = 0;
+		m_LstInf[i].m_DatePrint = 0;
+        *m_LstInf[i].m_GroupRoot = 0;
 		*m_LstInf[i].m_GroupLstName = 0;
-
+        
 	   for (j=0; j<MAX_GROUP_NUM; j++)
 	   {
 		   m_LstInf[i].m_GroupInf[j].m_CurCheckKey = 0;
 		   m_LstInf[i].m_GroupInf[j].m_GroupNo = j;
 		   m_LstInf[i].m_GroupInf[j].m_RealServerNum = 0;
 		   m_LstInf[i].m_GroupInf[j].m_SendDataType = 256;
+           m_LstInf[i].m_GroupInf[j].m_DatePrint = 0;
            *m_LstInf[i].m_GroupInf[j].m_GroupRoot = 0;
            *m_LstInf[i].m_GroupInf[j].m_GroupLstName = 0;
 		  
@@ -282,6 +284,9 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
 		   }else if(strcmp(attributeOfList->Name(), "GroupNumber") == 0)
 		   {
 			   m_LstInf[i].m_RealGroupNum = attributeOfList->IntValue();
+           }else if(strcmp(attributeOfList->Name(), "DatePrint") == 0)
+           {
+               m_LstInf[i].m_DatePrint = attributeOfList->IntValue();
            }
 	   }
         if(file_find) 
@@ -309,6 +314,9 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
                }else if(strcmp(attributeOfGroup->Name(), "GroupListName") == 0)
                {
                    strcpy(m_LstInf[i].m_GroupInf[j].m_GroupLstName, attributeOfGroup->Value());
+               }else if(strcmp(attributeOfGroup->Name(), "DatePrint") == 0)
+               {
+                   m_LstInf[i].m_GroupInf[j].m_DatePrint = attributeOfGroup->IntValue();
                }
 		   }
 
@@ -379,6 +387,10 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
             }
             else if(strcmp(attributeOfFile->Name(), "ServerNumber") == 0) {
                 m_LstInf[i + p].m_GroupInf[0].m_RealServerNum = attributeOfFile->IntValue();
+            }
+            else if(strcmp(attributeOfFile->Name(), "DatePrint") == 0) {
+                m_LstInf[i + p].m_DatePrint = attributeOfFile->IntValue();
+                m_LstInf[i + p].m_GroupInf[0].m_DatePrint = attributeOfFile->IntValue();
             }
         }
         m_LstInf[i + p].m_RealGroupNum = 1;
@@ -604,7 +616,8 @@ int CQSEPSDF_CS::EndALst(_DFIELD_ *pData,ServerInf * pServer)
 	result.append((const char*)&pData->m_OPNO, 8);
 	result.append((const char*)&pData->m_ListNameLen, 4);
 	result.append(pData->m_Listname, pData->m_ListNameLen);
-
+    result.append((const char*)&pData->m_DatePrint, 4);
+    std::cout<<pData->m_DatePrint<<std::endl;
     int SendResult= -1;
 	int iLoop = 0;
 	do 
@@ -821,6 +834,7 @@ int CQSEPSDF_CS::Work_StartList(const int32_t CurThreadNo, const int pointer,_DF
 		pStartData->m_Key = 0;
 		strcpy(pStartData->m_Listname, pTmpData->m_Listname);
 		pStartData->m_ListNameLen = pTmpData->m_ListNameLen;  
+        pStartData->m_DatePrint = m_LstInf[CurThreadNo].m_GroupInf[pointer].m_DatePrint | m_LstInf[CurThreadNo].m_DatePrint;
 
 		for (j =0; j < m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum; j++)
 		{
@@ -868,6 +882,7 @@ int CQSEPSDF_CS::Work_OpenFile(const int32_t CurThreadNo, const int pointer, _DF
 		pOpenData->m_FP = m_LstInf[CurThreadNo].m_CurFileFP;
 		pOpenData->m_Result = -1;
 		pOpenData->m_FreeSymbole = m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum;
+        pOpenData->m_DatePrint = m_LstInf[CurThreadNo].m_DatePrint | m_LstInf[CurThreadNo].m_GroupInf[pointer].m_DatePrint;
 
 		for (int j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum; j++ )
 		{
@@ -921,7 +936,9 @@ int CQSEPSDF_CS::Work_CloseFile(const int32_t CurThreadNo, const int pointer, _D
 		pCloseFileData->m_FP          = m_LstInf[CurThreadNo].m_CurFileFP;//文件句柄
 		pCloseFileData->m_Result      = -1;//操作是否成功的标志
 		pCloseFileData->m_FreeSymbole = m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum;
-		for (int j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum; j++)
+		pCloseFileData->m_DatePrint = m_LstInf[CurThreadNo].m_GroupInf[pointer].m_DatePrint | m_LstInf[CurThreadNo].m_DatePrint;
+
+        for (int j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum; j++)
 		{
 			m_pDataQue[CurThreadNo][pointer][j]->Push(pCloseFileData->m_NO);
 		}
@@ -964,6 +981,7 @@ int CQSEPSDF_CS::Work_CloseList(const int32_t CurThreadNo, const int pointer, _D
 		strcpy(pEndData->m_Listname, pTmpData->m_Listname);
 		pEndData->m_ListNameLen = pTmpData->m_ListNameLen;
 		pEndData->m_FreeSymbole = m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum;
+        pEndData->m_DatePrint = m_LstInf[CurThreadNo].m_GroupInf[pointer].m_DatePrint | m_LstInf[CurThreadNo].m_DatePrint;
 
 		for (j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[pointer].m_RealServerNum; j++)
 		{
@@ -1082,6 +1100,7 @@ uint64_t CQSEPSDF_CS::Work_ALLData(const int32_t CurThreadNo, const int Gidx, _D
 		pReadData->m_DataLength  = pTmpReadData->m_DataLength;
 		ddwFileSize              += pReadData->m_DataLength;
 		memcpy(pReadData->m_PData, pTmpReadData->m_PData, pTmpReadData->m_DataSize);
+        pReadData->m_DatePrint = m_LstInf[CurThreadNo].m_GroupInf[k].m_DatePrint | m_LstInf[CurThreadNo].m_DatePrint;
 
 		for (int j = 0; j < m_LstInf[CurThreadNo].m_GroupInf[k].m_RealServerNum; j++)
 		{
@@ -1443,6 +1462,7 @@ int CQSEPSDF_CS::MainWork()
             else
                 strcpy(TmpData.m_Listname, m_LstInf[CurThreadNo].m_GroupLstName);
             TmpData.m_ListNameLen = strlen(TmpData.m_Listname);
+            TmpData.m_DatePrint = m_LstInf[CurThreadNo].m_GroupInf[pointer].m_DatePrint | m_LstInf[CurThreadNo].m_DatePrint;
             //向群组队列发送指令
             //   step 2: 打开List命令
             if(TmpLstNOINF.m_FileNum == 0) {
@@ -1592,6 +1612,7 @@ int CQSEPSDF_CS::Main_Command(int LNo, int GNo, int SNo)
    pData->m_FP = NULL;                         //文件句柄
    pData->m_Result = -1;                       //操作是否成功的标志
    pData->m_MemType = SUITE;
+   pData->m_DatePrint = 1;                     //服务端是否打印为.lst.(date)
    int iQueNo = -1;
 
    for (;1;)
