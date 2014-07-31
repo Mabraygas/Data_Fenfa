@@ -43,8 +43,7 @@ int CQSEPSDF_MainControl::MainInitSys(void **obj,int QueSize,char* Dpath)
 		m_Que->Push_W(i);
 		InitializeCriticalSection(&m_DataF[i].m_Cri);
 
-	}
-
+	} 
     m_CMem = new CMemManger();
 	//if(m_CMem->InitSys(1000<<20, 50<<20))
 	if(m_CMem->InitSys(1<<16, 1<<10))

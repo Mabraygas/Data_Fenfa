@@ -16,8 +16,8 @@ OBJS=protocol.o MemManger.o DayLog.o CountNumber.o
 CFLAG=-ggdb -Wall -DNLOG
 
 
-#all: $(UKSOBJ) $(OUT_LIB) $(BIN) $(TOOL_BIN) $(TEST_BIN) 
-all: $(UKSOBJ) $(OUT_LIB) $(BIN)
+all: $(UKSOBJ) $(OUT_LIB) $(BIN) $(TOOL_BIN) $(TEST_BIN) 
+#all: $(UKSOBJ) $(OUT_LIB) $(BIN)
 
 DFSystem:QSEPSDF.o QSEPSDF_MainControl.o QSEPSDF_CS.o QSEPSDF_SS.o QSEPSDF_SSWork.o ThreadMd5.o SmsNotify.o work_client.o $(OBJS)
 	g++ $(CFLAG) -o $@  $^  $(addprefix -I, $(INC)) -lpthread $(LIBS)
@@ -31,8 +31,8 @@ DFS_DataServer:data_server.o QSEPSDF_SSWork.o QSEPSDF_SS.o ThreadMd5.o SmsNotify
 DFS_IBServer:IsBrokerServer.o IsBrokerWork.o ThreadMd5.o SmsNotify.o $(OBJS)
 	g++ $(CFLAG) -o $@  $^  $(addprefix -I, $(INC)) -lpthread $(LIBS)
 
-#verify_monitor:verify_monitor.o data_verify.o work_client.o SmsNotify.o QSEPSDF_MainControl.o $(OBJS)
-#	g++ $(CFLAG) -o $@  $^  $(addprefix -I, $(INC)) -lpthread $(LIBS)
+verify_monitor:verify_monitor.o data_verify.o work_client.o SmsNotify.o QSEPSDF_MainControl.o $(OBJS)
+	g++ $(CFLAG) -o $@  $^  $(addprefix -I, $(INC)) -lpthread $(LIBS)
 
 BaseUpdate:thread_update.o work_client.o SmsNotify.o $(OBJS)
 	g++ $(CFLAG) -o $@  $^  $(addprefix -I, $(INC)) -lpthread $(LIBS)

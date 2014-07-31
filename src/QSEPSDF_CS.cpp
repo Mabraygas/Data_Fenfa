@@ -16,9 +16,9 @@
 
 #include "protocol.h"
 #include "QSEPSDF_CS.h"
-#include "DayLog.h"
 #include "SmsNotify.h"
 #include "md5.h"
+#include "DayLog.h"
 #include "work_client.h"
 
 #define  LOG(format, args...) g_clilog.TWrite("%s:%s(%d) " format, __FILE__, __FUNCTION__, __LINE__, ##args)
@@ -617,7 +617,6 @@ int CQSEPSDF_CS::EndALst(_DFIELD_ *pData,ServerInf * pServer)
 	result.append((const char*)&pData->m_ListNameLen, 4);
 	result.append(pData->m_Listname, pData->m_ListNameLen);
     result.append((const char*)&pData->m_DatePrint, 4);
-    std::cout<<pData->m_DatePrint<<std::endl;
     int SendResult= -1;
 	int iLoop = 0;
 	do 
