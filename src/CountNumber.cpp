@@ -23,6 +23,8 @@ int CountNumber(int& MAX_LST_NUM, int& MAX_GROUP_NUM, int& MAX_S_NUM_AGROUP, int
 
     if(strcmp("ListNumber", attributeOfSoku->Name()) == 0)
         MAX_LST_NUM = attributeOfSoku->IntValue();
+    else
+        return -1;
 
     TiXmlElement* ListElement = rootElement->FirstChildElement();
     for(i = 0 ; ListElement != NULL; ListElement = ListElement->NextSiblingElement(), i++) {
@@ -55,6 +57,9 @@ int CountNumber(int& MAX_LST_NUM, int& MAX_GROUP_NUM, int& MAX_S_NUM_AGROUP, int
     }
     MAX_LST_NUM = i > MAX_LST_NUM ? i : MAX_LST_NUM;
     
+    /*******************************
+      File字段
+      *****************************/
     for(p = 0; ListElement != NULL; ListElement = ListElement->NextSiblingElement(), p++) {
         TiXmlAttribute* attributeOfFile = ListElement->FirstAttribute();
         for(; attributeOfFile != NULL; attributeOfFile = attributeOfFile->Next()) {

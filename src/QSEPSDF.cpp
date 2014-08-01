@@ -32,7 +32,13 @@ int main(int argc, char* argv[])
 		usage(argc, argv);
 		return -1;
 	}
+    //查看配置文件是否编写正确
     int initSuccess = CountNumber(MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP, FILE_NUM);
+    
+    if(initSuccess) {
+        printf(".xml file error. check it & try again\n");
+        return -1;
+    }
     CQSEPSDF_CS dfClient;
 	CQSEPSDF_SS dfServer;
 

@@ -24,7 +24,9 @@ int main(int argc, char* argv[])
 	}
     
     int initSuccess = CountNumber(MAX_LST_NUM, MAX_GROUP_NUM, MAX_S_NUM_AGROUP, FILE_NUM);
-
+    if(initSuccess) {
+        printf("There is something wrong with your .xml file\nplease check it & run again.");
+    }
 	CQSEPSDF_CS dfClient;
 	CQSEPSDF_SS dfServer;
 

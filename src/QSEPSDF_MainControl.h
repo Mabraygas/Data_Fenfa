@@ -87,9 +87,9 @@ typedef struct GroupInf
 	_SERVER_INF_*           m_Server;
     int						m_RealServerNum;               //实际的文件服务器的数目
 	//CRITICAL_SECTION		m_Cri;                         //当前组的锁，用于做归零计算使用
-    char                    m_GroupRoot[300];              //存入服务器文件的路径
-    char                    m_GroupLstName[300];           //服务器列表的名称
-    int                     m_DatePrint;
+    char                    m_GroupRoot[300];              //存入服务器文件的路径（根据下放要求增添字段）
+    char                    m_GroupLstName[300];           //服务器列表的名称（根据下方要求增添字段）
+    int                     m_DatePrint;                   //服务端.lst文件是否加带日期标记
 }_GINF_;
 
 typedef struct ListInf 
@@ -109,7 +109,7 @@ typedef struct ListInf
 	char                    m_GroupLstName[300];           //服务器列表的名称
 	char                    m_GroupRoot[300];              //存入服务器文件的路径
 	FILE*                   m_CurFileFP;                   //当前服务器在操作的对方写文件的句柄
-    int                     m_DatePrint;
+    int                     m_DatePrint;                   //服务端.lst文件是否加带日期标记
 }_LST_INF_;
 
 typedef struct DataField 

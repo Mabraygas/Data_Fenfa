@@ -628,8 +628,12 @@ void QSEPSDF_SSWork::CloseAList(const RecvData &recv)
 	struct tm* ConvertedTime;
 	ConvertedTime = gmtime(&nowtime);
 	char TimeString[300];
-	snprintf(TimeString, sizeof(TimeString), ConvertedTime->tm_mon > 8 ? ".%d%d%d" : ".%d0%d%d", 1900 + ConvertedTime->tm_year, 1 + ConvertedTime->tm_mon, ConvertedTime->tm_mday);
-	tmpData.m_Result = 0;
+	//snprintf(TimeString, sizeof(TimeString), ConvertedTime->tm_mon > 8 ? ".%d%d%d" : ".%d0%d%d", 1900 + ConvertedTime->tm_year, 1 + ConvertedTime->tm_mon, ConvertedTime->tm_mday);
+	snprintf(TimeString, sizeof(TimeString), 
+             (ConvertedTime->tm_mon > 8 && ConvertedTime->tm_mday > 8) ?  ".%d%d%d" : 
+             (ConvertedTime->tm_mon > 8 || ConvertedTime->tm_mday > 8) ? (ConvertedTime->tm_mon > 8 ? ".%d%d0%d" : ".%d0%d%d") :
+             ".%d0%d0%d", 1900 + ConvertedTime->tm_year, 1 + ConvertedTime->tm_mon, ConvertedTime->tm_mday);
+    tmpData.m_Result = 0;
 	string strListName = string(tmpData.m_Listname);
 	//if(tmpData.m_DatePrint == 1)
 	//	strListName += string(TimeString);

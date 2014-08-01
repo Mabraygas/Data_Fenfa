@@ -170,7 +170,7 @@ int CQSEPSDF_CS::InitSys(CQSEPSDF_MainControl* pMain)
 */
 int CQSEPSDF_CS::LoadAllINF()
 {
-   int i,j,k,p,q;
+   int i,j,k;
    for (i=0; i<MAX_LST_NUM + FILE_NUM; i++)
    {
 	    m_LstInf[i].m_RealGroupNum = 0;
@@ -223,8 +223,11 @@ int CQSEPSDF_CS::LoadAllINF()
    return 0;
 }
 
-/*
-*/
+/**
+  @brief: 解析 .xml文件函数
+          先解析List部分，然后解析File部分
+          要求配置文件必须先写List再写File(可以不写但是顺序不能反)
+  */
 int CQSEPSDF_CS::LoadXml(const char* xmlFile)
 {
    if(xmlFile == NULL)
@@ -302,7 +305,9 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
 			   }else if(strcmp(attributeOfGroup->Name(), "SendDataType") == 0)
 			   {
 				   m_LstInf[i].m_GroupInf[j].m_SendDataType = attributeOfGroup->IntValue();
-			   }else if(strcmp(attributeOfGroup->Name(), "ServerNumber") == 0)
+                   if(attributeOfGroup->IntValue() != 1 && attributeOfGroup->IntValue() != 2)
+                       m_LstInf[i].m_GroupInf[j].m_SendDataType = 2;
+               }else if(strcmp(attributeOfGroup->Name(), "ServerNumber") == 0)
 			   {
 				   m_LstInf[i].m_GroupInf[j].m_RealServerNum = attributeOfGroup->IntValue();
 			   }else if(strcmp(attributeOfGroup->Name(), "GroupRoot") == 0)
@@ -366,7 +371,7 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
                 fclose(filewrite);
                 filewrite = NULL;
                 char fileOrigin[300];
-                char cdNow[100];
+                char cdNow[300];
                 getcwd(cdNow, sizeof(cdNow));
                 snprintf(fileOrigin, sizeof(fileOrigin), "%s%c%s", cdNow, '/', filename);
                 strcpy(m_LstInf[i + p].m_CheckLstMName, fileOrigin);
@@ -380,10 +385,12 @@ int CQSEPSDF_CS::LoadXml(const char* xmlFile)
                 char fileroot[300];
                 snprintf(fileroot, sizeof(fileroot), "%s%c%d%s", m_LstInf[i + p].m_GroupRoot, '/', p, ".lst");
                 strcpy(m_LstInf[i + p].m_GroupLstName, fileroot);
-                strcpy(m_LstInf[i + p].m_GroupInf[0].m_GroupLstName, m_LstInf[i + p].m_GroupLstName);
+                strcpy(m_LstInf[i + p].m_GroupInf[0].m_GroupLstName, fileroot);
             }
             else if(strcmp(attributeOfFile->Name(), "SendDataType") == 0) {
                 m_LstInf[i + p].m_GroupInf[0].m_SendDataType = attributeOfFile->IntValue();
+                if(attributeOfFile->IntValue() != 1 && attributeOfFile->IntValue() != 2)
+                    m_LstInf[i + p].m_GroupInf[0].m_SendDataType = 2;
             }
             else if(strcmp(attributeOfFile->Name(), "ServerNumber") == 0) {
                 m_LstInf[i + p].m_GroupInf[0].m_RealServerNum = attributeOfFile->IntValue();
@@ -802,7 +809,7 @@ int CQSEPSDF_CS::GetrealStr(char* source)
 int CQSEPSDF_CS::Work_StartList(const int32_t CurThreadNo, const int pointer,_DFIELD_* pTmpData)
 {
 	int result = -1;
-	int k = 0, j = 0;
+	int j = 0;
 	//for ( k = 0; k < m_LstInf[CurThreadNo].m_RealGroupNum; k++)
 	//{
 
@@ -950,7 +957,7 @@ int CQSEPSDF_CS::Work_CloseFile(const int32_t CurThreadNo, const int pointer, _D
 int CQSEPSDF_CS::Work_CloseList(const int32_t CurThreadNo, const int pointer, _DFIELD_* pTmpData)
 {
 	int result = -1;
-	int k = 0, j = 0;
+	int j = 0;
 	//for ( k = 0; k < m_LstInf[CurThreadNo].m_RealGroupNum; k++)
 	//{
 		_DFIELD_ *pEndData;
@@ -999,12 +1006,10 @@ uint64_t CQSEPSDF_CS::Work_ModData(const int32_t CurThreadNo, const int GIdx, _D
 	int k = GIdx;
 	uint64_t ddwFileSize = 0;	
 	int result = -1;
-
 	while(prstream->getLine(pTmpReadData->m_PData, 1024) > 0) //按行读取
 	{
 		if(ReadAfieldFromFile(pTmpReadData))
 			continue;
-
 		_DFIELD_ * pReadData;
 		_DFIELD_   ReadData;
 
@@ -1040,7 +1045,7 @@ uint64_t CQSEPSDF_CS::Work_ModData(const int32_t CurThreadNo, const int GIdx, _D
 		ddwFileSize                += pReadData->m_DataLength;
 
 		memcpy(pReadData->m_PData, pTmpReadData->m_PData, pTmpReadData->m_DataSize);
-
+        pReadData->m_DatePrint = m_LstInf[CurThreadNo].m_GroupInf[k].m_DatePrint | m_LstInf[CurThreadNo].m_DatePrint;
 		int TmpServerNO1 = (pReadData->m_Key/4) % m_LstInf[CurThreadNo].m_GroupInf[k].m_RealServerNum;
 		m_pDataQue[CurThreadNo][k][TmpServerNO1]->Push(pReadData->m_NO);
 
@@ -1163,7 +1168,7 @@ int CQSEPSDF_CS::Work_Verify(const int32_t CurThreadNo, const int pointer)
 		//远程文件名
         //for(int i = 0; i < m_LstInf[CurThreadNo].m_RealGroupNum; i++) {
             /*******************************
-              先看Group属性中，GroupRoot是否为空，如果不是，则取Group重的GroupRoot,忽略List中的
+              先看Group属性中，GroupRoot是否为空，如果不是，则取Group中的GroupRoot,忽略List中的
               *******************************/
             if(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupRoot != NULL)
                 sprintf(szremote, "%s/%s", m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupRoot, szFile);
@@ -1357,7 +1362,14 @@ int CQSEPSDF_CS::BuildDataToStr(_DFIELD_* pData, string& result)
 }
 
 
-
+/*******************************************************
+  本函数结构调整较大，主要是因为在配置文件中将服务端存储文件夹从
+  list字段下放到group字段，导致每个list中，不同Group的目标
+  地址都不同。所以本函数必须将以前一个list处理一次的方式改成
+  一个group处理一次的方式。
+  相应的，在本函数中调用的其他函数也基本做了处理单元的修改，将处理单元
+  从List修改为Group
+  ****************************************************/
 int CQSEPSDF_CS::MainWork()
 {
 	int CurThreadNo =-1;
@@ -1372,7 +1384,7 @@ int CQSEPSDF_CS::MainWork()
 
 	char* pBuf = new char[MAX_SEND_SIZE];
 
-	int k = 0, j = 0;
+	int j = 0;
 
 	char szlstName[300];
 	sprintf(szlstName, "%s.Ready", m_LstInf[CurThreadNo].m_CheckLstMName);
@@ -1450,6 +1462,12 @@ int CQSEPSDF_CS::MainWork()
         else
             fseek(fprLst, 0, SEEK_SET);
         LOG("DFSystem Start List: %s\n", szlstName);
+
+        /****************************************
+          枚举Group
+          之前的步骤可以List内合起来做，for循环内的
+          操作要一个Group一个Group的做
+          **************************************/
         for(int pointer = 0; pointer < m_LstInf[CurThreadNo].m_RealGroupNum; pointer++) {
             m_LstInf[CurThreadNo].m_CurFileFP = NULL;
             fprLst = fopen(szlstName, "rt");
@@ -1494,11 +1512,15 @@ int CQSEPSDF_CS::MainWork()
                     strcpy(szFile, p + 1);
                 else
                     strcpy(szFile, datafile);
-
+                
+                //下放后的更改
                 if(m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupRoot != NULL)
                     sprintf(TmpData.m_Filename, "%s/%s", m_LstInf[CurThreadNo].m_GroupInf[pointer].m_GroupRoot, szFile);
-                else
+                else if(m_LstInf[CurThreadNo].m_GroupRoot != NULL)
                     sprintf(TmpData.m_Filename, "%s/%s", m_LstInf[CurThreadNo].m_GroupRoot, szFile);
+                else
+                    sprintf(TmpData.m_Filename, "%s", szFile);
+                
                 TmpData.m_FileNameLen = strlen(TmpData.m_Filename);
                 TmpData.m_FP = fprData;
                 m_LstInf[CurThreadNo].m_CurFileFP = fprData;
@@ -1611,7 +1633,6 @@ int CQSEPSDF_CS::Main_Command(int LNo, int GNo, int SNo)
    pData->m_FP = NULL;                         //文件句柄
    pData->m_Result = -1;                       //操作是否成功的标志
    pData->m_MemType = SUITE;
-   pData->m_DatePrint = 1;                     //服务端是否打印为.lst.(date)
    int iQueNo = -1;
 
    for (;1;)
